@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+
+<title>Settings</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+
+/******** DARK MODE VARIABLES ********/
+
+:root{
+ --bg:#f4f6fb;
+ --card:white;
+ --text:black;
+}
+
+.dark{
+ --bg:#0f172a;
+ --card:#1e293b;
+ --text:white;
+}
+
+/******** GLOBAL ********/
+
+body{
+ margin:0;
+ font-family:'Inter',sans-serif;
+ background:var(--bg);
+ color:var(--text);
+ transition:0.3s;
+}
+
+.container{
+ display:flex;
+}
+
+/******** SIDEBAR ********/
+
+.sidebar{
+ width:240px;
+ height:100vh;
+ background:#1e293b;
+ color:white;
+ padding:20px;
+}
+
+.sidebar li{
+ list-style:none;
+ padding:12px;
+ border-radius:8px;
+}
+
+.sidebar li:hover{
+ background:#334155;
+}
+
+.sidebar a{
+ color:white;
+ text-decoration:none;
+}
+
+.active{
+ background:#4f46e5;
+}
+
+/******** MAIN ********/
+
+.main{
+ flex:1;
+ padding:40px;
+}
+
+/******** CARD ********/
+
+.card{
+ background:var(--card);
+ padding:25px;
+ border-radius:14px;
+ margin-bottom:20px;
+ box-shadow:0px 8px 20px rgba(0,0,0,0.05);
+}
+
+/******** PROFILE ********/
+
+.profile{
+ display:flex;
+ align-items:center;
+ gap:20px;
+}
+
+.profile img{
+ width:85px;
+ height:85px;
+ border-radius:50%;
+}
+
+/******** INPUT ********/
+
+input,select{
+ width:100%;
+ padding:10px;
+ border-radius:8px;
+ border:1px solid #ddd;
+ margin-top:5px;
+}
+
+/******** TOGGLE SWITCH ********/
+
+.switch{
+ position:relative;
+ display:inline-block;
+ width:50px;
+ height:26px;
+}
+
+.switch input{
+ opacity:0;
+}
+
+.slider{
+ position:absolute;
+ cursor:pointer;
+ inset:0;
+ background:#ccc;
+ border-radius:30px;
+ transition:.3s;
+}
+
+.slider:before{
+ content:"";
+ position:absolute;
+ height:18px;
+ width:18px;
+ left:4px;
+ bottom:4px;
+ background:white;
+ border-radius:50%;
+ transition:.3s;
+}
+
+input:checked + .slider{
+ background:#4f46e5;
+}
+
+input:checked + .slider:before{
+ transform:translateX(24px);
+}
+
+/******** BUTTON ********/
+
+button{
+ width:100%;
+ padding:14px;
+ border:none;
+ border-radius:10px;
+ background:linear-gradient(135deg,#4f46e5,#6366f1);
+ color:white;
+ font-size:16px;
+ cursor:pointer;
+}
+
+button:hover{
+ transform:scale(1.02);
+}
+
+/******** SUCCESS ********/
+
+#msg{
+ color:limegreen;
+ margin-top:10px;
+}
+
+</style>
+</head>
+
+
+<body>
+
+<div class="container">
+
+<!-- SIDEBAR -->
+
+<aside class="sidebar">
+
+<h2>Portfolio Manager</h2>
+
+<ul>
+<li><a href="index.html">Dashboard</a></li>
+<li><a href="holdings.html">Holdings</a></li>
+<li><a href="transactions.html">Transactions</a></li>
+<li><a href="analytics.html">Analytics</a></li>
+<li class="active"><a href="settings.html">Settings</a></li>
+</ul>
+
+</aside>
+
+
+
+<!-- MAIN -->
+
+<main class="main">
+
+<h1>Client Settings</h1>
+
+
+<div class="card">
+
+<div class="profile">
+<img src="https://i.pravatar.cc/150?img=12">
+<div>
+<h3>Harsh Dubey</h3>
+<p>harsh@email.com</p>
+</div>
+</div>
+
+</div>
+
+
+
+<div class="card">
+
+<h2>Email Alerts</h2>
+
+<label>Email Address</label>
+<input id="email" placeholder="Enter verified email">
+
+<label>Alert Threshold (%)</label>
+<input id="threshold" type="number" value="7">
+
+<br><br>
+
+<label class="switch">
+<input type="checkbox" id="alerts">
+<span class="slider"></span>
+</label>
+
+Enable Price Drop Alerts
+
+</div>
+
+
+
+<div class="card">
+
+<h2>Appearance</h2>
+
+<label class="switch">
+<input type="checkbox" id="darkToggle">
+<span class="slider"></span>
+</label>
+
+Enable Dark Mode
+
+</div>
+
+
+
+<button onclick="saveSettings()">Save Settings</button>
+
+<p id="msg"></p>
+
+</main>
+
+</div>
+
+
+
+<script>
+
+/******** LOAD ********/
+
+if(localStorage.dark==="true"){
+ document.body.classList.add("dark");
+ document.getElementById("darkToggle").checked=true;
+}
+
+document.getElementById("darkToggle")
+.addEventListener("change",function(){
+
+ if(this.checked){
+   document.body.classList.add("dark");
+ }else{
+   document.body.classList.remove("dark");
+ }
+
+});
+
+
+/******** SAVE ********/
+
+function saveSettings(){
+
+localStorage.email =
+document.getElementById("email").value;
+
+localStorage.threshold =
+document.getElementById("threshold").value;
+
+localStorage.alerts =
+document.getElementById("alerts").checked;
+
+localStorage.dark =
+document.getElementById("darkToggle").checked;
+
+document.getElementById("msg").innerText =
+"✅ Settings Saved Successfully";
+
+}
+
+</script>
+
+</body>
+</html>

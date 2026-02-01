@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<title>Analytics - Portfolio Manager</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+/******** GLOBAL ********/
+
+body{
+    margin:0;
+    font-family:'Inter',sans-serif;
+    background:#f5f7fb;
+}
+
+.container{
+    display:flex;
+}
+
+/******** SIDEBAR ********/
+
+.sidebar{
+    width:240px;
+    height:100vh;
+    background:#1e293b;
+    color:white;
+    padding:20px;
+}
+
+.sidebar li{
+    list-style:none;
+    padding:12px;
+    border-radius:8px;
+}
+
+.sidebar li:hover{
+    background:#334155;
+}
+
+.sidebar a{
+    color:white;
+    text-decoration:none;
+    display:block;
+}
+
+.active{
+    background:#4f46e5;
+}
+
+/******** MAIN ********/
+
+.main{
+    flex:1;
+    padding:30px;
+}
+
+/******** CARDS ********/
+
+.summary{
+    display:flex;
+    gap:20px;
+}
+
+.card{
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0px 4px 10px rgba(0,0,0,0.05);
+}
+
+/******** CHART GRID ********/
+
+.charts{
+    margin-top:30px;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(400px,1fr));
+    gap:20px;
+}
+
+.chart-box{
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0px 4px 10px rgba(0,0,0,0.05);
+}
+
+.insight{
+    margin-top:25px;
+    background:white;
+    padding:20px;
+    border-radius:12px;
+}
+
+</style>
+</head>
+
+
+
+<body>
+
+<div class="container">
+
+<!-- SIDEBAR -->
+
+<aside class="sidebar">
+
+<h2>Portfolio Manager</h2>
+
+<ul>
+
+<li><a href="index.html">Dashboard</a></li>
+
+<li><a href="holdings.html">Holdings</a></li>
+
+<li><a href="transactions.html">Transactions</a></li>
+
+<li class="active"><a href="analytics.html">Analytics</a></li>
+
+<li><a href="settings.html">Settings</a></li>
+
+</ul>
+
+</aside>
+
+
+
+<!-- MAIN -->
+
+<main class="main">
+
+<h1>Portfolio Analytics</h1>
+
+
+<!-- SUMMARY -->
+
+<div class="summary">
+
+<div class="card">
+<h3>Top Performer</h3>
+<p id="topPerformer">-</p>
+</div>
+
+<div class="card">
+<h3>Worst Performer</h3>
+<p id="worstPerformer">-</p>
+</div>
+
+</div>
+
+
+
+<!-- CHARTS -->
+
+<div class="charts">
+
+<div class="chart-box">
+<h3>Asset Allocation</h3>
+<canvas id="pieChart"></canvas>
+</div>
+
+<div class="chart-box">
+<h3>Portfolio Growth</h3>
+<canvas id="lineChart"></canvas>
+</div>
+
+<div class="chart-box">
+<h3>Stock Profit / Loss</h3>
+<canvas id="profitChart"></canvas>
+</div>
+
+<div class="chart-box">
+<h3>Invested vs Current</h3>
+<canvas id="comparisonChart"></canvas>
+</div>
+
+</div>
+
+
+
+<!-- INSIGHTS -->
+
+<div class="insight">
+<h3>Portfolio Insight</h3>
+<p id="insightText"></p>
+</div>
+
+</main>
+
+</div>
+
+
+
+<script>
+
+/**************************************************
+ SAMPLE DATA
+ Replace with Spring Boot later
+**************************************************/
+
+const portfolio = [
+
+{ticker:"AAPL", invested:4000, current:5200},
+{ticker:"GOOG", invested:3000, current:2600},
+{ticker:"MSFT", invested:2500, current:3300},
+{ticker:"TSLA", invested:2000, current:1500}
+
+];
+
+
+/**************************************************
+ CALCULATIONS
+**************************************************/
+
+const profits = portfolio.map(
+s => s.current - s.invested
+);
+
+
+// Top + Worst performer
+
+let top = portfolio[0];
+let worst = portfolio[0];
+
+portfolio.forEach(stock=>{
+
+let profit = stock.current-stock.invested;
+
+if(profit > (top.current-top.invested)) top=stock;
+if(profit < (worst.current-worst.invested)) worst=stock;
+
+});
+
+document.getElementById("topPerformer").innerText =
+top.ticker;
+
+document.getElementById("worstPerformer").innerText =
+worst.ticker;
+
+
+// Insight
+
+document.getElementById("insightText").innerText =
+`Your portfolio is heavily driven by ${top.ticker}.
+Consider reviewing underperforming assets like ${worst.ticker}.`;
+
+
+
+/**************************************************
+ PIE — Asset Allocation
+**************************************************/
+
+new Chart(document.getElementById("pieChart"),{
+
+type:'doughnut',
+
+data:{
+labels:portfolio.map(s=>s.ticker),
+
+datasets:[{
+data:portfolio.map(s=>s.current),
+
+backgroundColor:[
+"#4f46e5",
+"#22c55e",
+"#f59e0b",
+"#ef4444"
+]
+}]
+}
+
+});
+
+
+
+/**************************************************
+ LINE — Growth
+**************************************************/
+
+new Chart(document.getElementById("lineChart"),{
+
+type:'line',
+
+data:{
+labels:["Jan","Feb","Mar","Apr","May"],
+
+datasets:[{
+label:"Portfolio Value",
+data:[8000,9500,11000,10500,12600],
+borderColor:"#4f46e5",
+tension:0.4
+}]
+}
+
+});
+
+
+
+/**************************************************
+ BAR — Profit Loss
+**************************************************/
+
+new Chart(document.getElementById("profitChart"),{
+
+type:'bar',
+
+data:{
+labels:portfolio.map(s=>s.ticker),
+
+datasets:[{
+label:"Profit / Loss",
+data:profits,
+backgroundColor:profits.map(
+p=>p>0?"#16a34a":"#dc2626"
+)
+}]
+}
+
+});
+
+
+
+/**************************************************
+ COMPARISON
+**************************************************/
+
+new Chart(document.getElementById("comparisonChart"),{
+
+type:'bar',
+
+data:{
+labels:portfolio.map(s=>s.ticker),
+
+datasets:[
+{
+label:"Invested",
+data:portfolio.map(s=>s.invested),
+backgroundColor:"#94a3b8"
+},
+{
+label:"Current",
+data:portfolio.map(s=>s.current),
+backgroundColor:"#4f46e5"
+}
+]
+}
+
+});
+
+</script>
+
+</body>
+</html>
