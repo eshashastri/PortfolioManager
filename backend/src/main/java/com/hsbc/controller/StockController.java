@@ -8,29 +8,17 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/stocks")
+@CrossOrigin
 public class StockController {
 
-    private final StockService stockService;
+    private final StockService service;
 
-    public StockController(StockService stockService) {
-        this.stockService = stockService;
+    public StockController(StockService service){
+        this.service = service;
     }
 
-    // Create a stock
-    @PostMapping
-    public Stock saveStock(@RequestBody Stock stock) {
-        return stockService.saveStock(stock);
-    }
-
-    // Get all stocks
-    @GetMapping
-    public List<Stock> getAllStocks() {
-        return stockService.getAllStocks();
-    }
-
-    // Get stock by ticker
-    @GetMapping("/{ticker}")
-    public Stock getStockByTicker(@PathVariable String ticker) {
-        return stockService.getByTicker(ticker);
+    @GetMapping("/search")
+    public List<Stock> search(@RequestParam String q){
+        return service.search(q);
     }
 }

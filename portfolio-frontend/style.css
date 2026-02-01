@@ -82,3 +82,10 @@ th,td{
 .sidebar li{
     list-style:none;
 }
+
+.card{
+    border:1px solid gray;
+    padding:10px;
+    margin:10px;
+    cursor:pointer;
+}

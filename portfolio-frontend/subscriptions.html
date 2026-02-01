@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Subscriptions</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            margin: 40px;
+        }
+
+        input {
+            width: 300px;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        .suggestions {
+            border: 1px solid #ccc;
+            width: 300px;
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+            position: absolute;
+        }
+
+        .suggestion-item {
+            padding: 8px;
+            cursor: pointer;
+        }
+
+        .suggestion-item:hover {
+            background: #f0f0f0;
+        }
+
+        .sub-item {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+        }
+
+        button {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h2>My Subscriptions</h2>
+
+<input type="text" id="search" placeholder="Search stocks..." autocomplete="off">
+
+<div id="suggestions" class="suggestions"></div>
+
+<h3>Your Subscriptions</h3>
+<div id="subs"></div>
+
+<script>
+
+const searchBox = document.getElementById("search");
+const suggestionsBox = document.getElementById("suggestions");
+const subsDiv = document.getElementById("subs");
+
+let subscriptions = [];
+
+// 🔥 SEARCH API CALL
+searchBox.addEventListener("input", async () => {
+
+    const q = searchBox.value;
+
+    if (q.length < 1) {
+        suggestionsBox.innerHTML = "";
+        return;
+    }
+
+    const res = await fetch(
+        `http://localhost:8080/stocks/search?q=${q}`
+    );
+
+    const data = await res.json();
+
+    suggestionsBox.innerHTML = "";
+
+    data.forEach(stock => {
+        const div = document.createElement("div");
+        div.className = "suggestion-item";
+        div.innerText = `${stock.companyName} (${stock.ticker})`;
+
+        div.onclick = () => addSubscription(stock);
+
+        suggestionsBox.appendChild(div);
+    });
+});
+
+
+// 🔥 ADD SUBSCRIPTION
+function addSubscription(stock) {
+
+    // prevent duplicates
+    if (subscriptions.find(s => s.ticker === stock.ticker)) {
+        alert("Already added!");
+        return;
+    }
+
+    subscriptions.push(stock);
+
+    renderSubs();
+
+    suggestionsBox.innerHTML = "";
+    searchBox.value = "";
+}
+
+
+// 🔥 RENDER SUBSCRIPTIONS
+function renderSubs() {
+
+    subsDiv.innerHTML = "";
+
+    subscriptions.forEach(s => {
+
+        const div = document.createElement("div");
+        div.className = "sub-item";
+
+        div.innerHTML = `
+            ${s.companyName} (${s.ticker})
+            <button onclick="removeSub('${s.ticker}')">Delete</button>
+        `;
+
+        subsDiv.appendChild(div);
+    });
+}
+
+
+// 🔥 REMOVE
+function removeSub(ticker) {
+    subscriptions = subscriptions.filter(s => s.ticker !== ticker);
+    renderSubs();
+}
+
+</script>
+
+</body>
+</html>

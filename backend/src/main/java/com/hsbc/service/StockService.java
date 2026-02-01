@@ -9,21 +9,31 @@ import java.util.List;
 @Service
 public class StockService {
 
-    private final StockRepo stockRepo;
+    private final StockRepo repo;
 
-    public StockService(StockRepo stockRepo) {
-        this.stockRepo = stockRepo;
+    public StockService(StockRepo repo) {
+        this.repo = repo;
     }
 
-    public Stock saveStock(Stock stock) {
-        return stockRepo.save(stock);
+    public List<Stock> search(String q){
+        return repo
+                .findTop20ByTickerContainingIgnoreCaseOrCompanyNameContainingIgnoreCase(q,q);
     }
 
-    public List<Stock> getAllStocks() {
-        return stockRepo.findAll();
+    public Stock saveStock(Stock s){
+        return repo.save(s);
     }
 
-    public Stock getByTicker(String ticker) {
-        return stockRepo.findByTicker(ticker);
+    public List<Stock> getAllStocks(){
+        return repo.findAll();
+    }
+
+    public Stock getByTicker(String ticker){
+        return repo.findAll()
+                .stream()
+                .filter(s -> s.getTicker().equalsIgnoreCase(ticker))
+                .findFirst()
+                .orElse(null);
     }
 }
+
