@@ -9,7 +9,7 @@ import java.util.Optional;
 public interface StockRepo extends JpaRepository<Stock, Long> {
 
     // For CSV duplicate check
-    Optional<Stock> findByTicker(String ticker);
+   Stock findByTicker(String ticker);
 
     // 🔥 THIS FIXES YOUR ERROR
     List<Stock> findTop20ByTickerContainingIgnoreCaseOrCompanyNameContainingIgnoreCase(
