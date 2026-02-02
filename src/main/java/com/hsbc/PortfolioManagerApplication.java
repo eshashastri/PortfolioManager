@@ -4,10 +4,11 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class PortfolioManager01Application {
+public class PortfolioManagerApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(PortfolioManager01Application.class, args);
+    static void main(String[] args) {
+
+        SpringApplication.run(PortfolioManagerApplication.class, args);
     }
 
 }
