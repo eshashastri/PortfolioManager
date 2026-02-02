@@ -8,7 +8,8 @@ body{
     display:flex;
 }
 
-/* Sidebar */
+/******** SIDEBAR ********/
+
 .sidebar{
     width:240px;
     height:100vh;
@@ -18,8 +19,22 @@ body{
 }
 
 .sidebar li{
+    list-style:none;
     padding:12px;
-    cursor:pointer;
+    border-radius:8px;
+}
+
+.sidebar li:hover{
+    background:#334155;
+}
+
+.sidebar a{
+    text-decoration:none;
+    color:white;
+}
+
+.active{
+    background:#4f46e5;
 }
 
 /* Main */

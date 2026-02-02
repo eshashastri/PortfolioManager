@@ -37,34 +37,7 @@ body{
  display:flex;
 }
 
-/******** SIDEBAR ********/
 
-.sidebar{
- width:240px;
- height:100vh;
- background:#1e293b;
- color:white;
- padding:20px;
-}
-
-.sidebar li{
- list-style:none;
- padding:12px;
- border-radius:8px;
-}
-
-.sidebar li:hover{
- background:#334155;
-}
-
-.sidebar a{
- color:white;
- text-decoration:none;
-}
-
-.active{
- background:#4f46e5;
-}
 
 /******** MAIN ********/
 
@@ -188,11 +161,12 @@ button:hover{
 <h2>Portfolio Manager</h2>
 
 <ul>
-<li><a href="index.html">Dashboard</a></li>
-<li><a href="holdings.html">Holdings</a></li>
-<li><a href="transactions.html">Transactions</a></li>
-<li><a href="analytics.html">Analytics</a></li>
-<li class="active"><a href="settings.html">Settings</a></li>
+    <li><a href="index.html">Dashboard</a></li>
+    <li><a href="holdings.html">Holdings</a></li>
+    <li><a href="transactions.html">Transactions</a></li>
+    <li><a href="analytics.html">Analytics</a></li>
+    <li class="active"><a href="settings.html">Settings</a></li>
+    <li><a href="subscriptions.html">Subscriptions</a></li>
 </ul>
 
 </aside>
@@ -311,6 +285,18 @@ document.getElementById("msg").innerText =
 }
 
 </script>
+<div class="container">
+
+    <!-- Sidebar will load here -->
+    <div id="sidebar-container"></div>
+
+    <main class="main">
+        <!-- page content -->
+    </main>
+
+</div>
+
+<script src="sidebar.js"></script>
 
 </body>
 </html>

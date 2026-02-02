@@ -1,31 +1,41 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Subscriptions</title>
 
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+
     <style>
-        body {
-            font-family: Arial;
-            margin: 40px;
+        /* small custom styles only */
+
+        .search-box {
+            position: relative;
+            width: 400px;
         }
 
-        input {
-            width: 300px;
-            padding: 10px;
+        #search {
+            width: 100%;
+            padding: 12px;
             font-size: 16px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
         }
 
         .suggestions {
-            border: 1px solid #ccc;
-            width: 300px;
+            position: absolute;
+            width: 100%;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
             max-height: 200px;
             overflow-y: auto;
-            background: white;
-            position: absolute;
+            z-index: 100;
         }
 
         .suggestion-item {
-            padding: 8px;
+            padding: 10px;
             cursor: pointer;
         }
 
@@ -34,112 +44,149 @@
         }
 
         .sub-item {
-            background: #f5f5f5;
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 5px;
+            background: white;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
         }
 
-        button {
-            margin-left: 10px;
+        .sub-item button {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
         }
     </style>
 </head>
 
 <body>
 
-<h2>My Subscriptions</h2>
+<div class="container">
 
-<input type="text" id="search" placeholder="Search stocks..." autocomplete="off">
+    <!-- SIDEBAR (same as index.html) -->
+    <aside class="sidebar">
+        <h2>Portfolio Manager</h2>
+        <ul>
+            <li><a href="index.html">Dashboard</a></li>
+            <li><a href="holdings.html">Holdings</a></li>
+            <li><a href="transactions.html">Transactions</a></li>
+            <li><a href="analytics.html">Analytics</a></li>
+            <li><a href="settings.html">Settings</a></li>
+            <li class="active"><a href="subscriptions.html">Subscriptions</a></li>
+        </ul>
+    </aside>
 
-<div id="suggestions" class="suggestions"></div>
+    <!-- MAIN -->
+    <main class="main">
 
-<h3>Your Subscriptions</h3>
-<div id="subs"></div>
+        <h1>Stock Subscriptions</h1>
+
+        <br>
+
+        <div class="search-box">
+            <input type="text" id="search" placeholder="Search stocks...">
+            <div id="suggestions" class="suggestions"></div>
+        </div>
+
+        <br><br>
+
+        <h2>Your Subscriptions</h2>
+        <div id="subs"></div>
+
+    </main>
+</div>
 
 <script>
+    const searchBox = document.getElementById("search");
+    const suggestionsBox = document.getElementById("suggestions");
+    const subsDiv = document.getElementById("subs");
 
-const searchBox = document.getElementById("search");
-const suggestionsBox = document.getElementById("suggestions");
-const subsDiv = document.getElementById("subs");
+    let subscriptions = [];
 
-let subscriptions = [];
+    /* SEARCH */
+    searchBox.addEventListener("input", async () => {
 
-// 🔥 SEARCH API CALL
-searchBox.addEventListener("input", async () => {
+        const q = searchBox.value;
 
-    const q = searchBox.value;
+        if (q.length < 1){
+            suggestionsBox.innerHTML="";
+            return;
+        }
 
-    if (q.length < 1) {
-        suggestionsBox.innerHTML = "";
-        return;
+        const res = await fetch(
+            `http://localhost:8080/stocks/search?q=${q}`
+        );
+
+        const data = await res.json();
+
+        suggestionsBox.innerHTML="";
+
+        data.forEach(stock=>{
+            const div=document.createElement("div");
+            div.className="suggestion-item";
+            div.innerText=`${stock.companyName} (${stock.ticker})`;
+            div.onclick=()=>addSubscription(stock);
+            suggestionsBox.appendChild(div);
+        });
+    });
+
+    /* ADD */
+    function addSubscription(stock){
+        if(subscriptions.find(s=>s.ticker===stock.ticker)){
+            alert("Already added!");
+            return;
+        }
+
+        subscriptions.push(stock);
+        renderSubs();
+
+        suggestionsBox.innerHTML="";
+        searchBox.value="";
     }
 
-    const res = await fetch(
-        `http://localhost:8080/stocks/search?q=${q}`
-    );
+    /* RENDER */
+    function renderSubs(){
+        subsDiv.innerHTML="";
 
-    const data = await res.json();
+        subscriptions.forEach(s=>{
+            const div=document.createElement("div");
+            div.className="sub-item";
 
-    suggestionsBox.innerHTML = "";
+            div.innerHTML=`
+                <div>
+                    <b>${s.companyName}</b><br>
+                    ${s.ticker}
+                </div>
+                <button onclick="removeSub('${s.ticker}')">Delete</button>
+            `;
 
-    data.forEach(stock => {
-        const div = document.createElement("div");
-        div.className = "suggestion-item";
-        div.innerText = `${stock.companyName} (${stock.ticker})`;
-
-        div.onclick = () => addSubscription(stock);
-
-        suggestionsBox.appendChild(div);
-    });
-});
-
-
-// 🔥 ADD SUBSCRIPTION
-function addSubscription(stock) {
-
-    // prevent duplicates
-    if (subscriptions.find(s => s.ticker === stock.ticker)) {
-        alert("Already added!");
-        return;
+            subsDiv.appendChild(div);
+        });
     }
 
-    subscriptions.push(stock);
-
-    renderSubs();
-
-    suggestionsBox.innerHTML = "";
-    searchBox.value = "";
-}
-
-
-// 🔥 RENDER SUBSCRIPTIONS
-function renderSubs() {
-
-    subsDiv.innerHTML = "";
-
-    subscriptions.forEach(s => {
-
-        const div = document.createElement("div");
-        div.className = "sub-item";
-
-        div.innerHTML = `
-            ${s.companyName} (${s.ticker})
-            <button onclick="removeSub('${s.ticker}')">Delete</button>
-        `;
-
-        subsDiv.appendChild(div);
-    });
-}
-
-
-// 🔥 REMOVE
-function removeSub(ticker) {
-    subscriptions = subscriptions.filter(s => s.ticker !== ticker);
-    renderSubs();
-}
-
+    /* DELETE */
+    function removeSub(ticker){
+        subscriptions=subscriptions.filter(s=>s.ticker!==ticker);
+        renderSubs();
+    }
 </script>
+<div class="container">
+
+    <!-- Sidebar will load here -->
+    <div id="sidebar-container"></div>
+
+    <main class="main">
+        <!-- page content -->
+    </main>
+
+</div>
+
+<script src="sidebar.js"></script>
 
 </body>
 </html>
