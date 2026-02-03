@@ -187,6 +187,47 @@
 </div>
 
 <script src="sidebar.js"></script>
+<script>
+async function loadSubscriptions() {
+    const res = await fetch("http://localhost:8080/subscriptions");
+    subscriptions = await res.json();
+    renderSubs();
+}
+async function removeSub(ticker) {
+
+    // 1️⃣ Call backend DELETE
+    await fetch(`http://localhost:8080/subscriptions/${ticker}`, {
+        method: "DELETE"
+    });
+
+    // 2️⃣ Update UI state
+    subscriptions = subscriptions.filter(s => s.ticker !== ticker);
+    renderSubs();
+}
+async function addSubscription(stock) {
+
+    const res = await fetch("http://localhost:8080/subscriptions", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            ticker: stock.ticker,
+            companyName: stock.companyName
+        })
+    });
+
+    const saved = await res.json();
+    subscriptions.push(saved);
+
+    renderSubs();
+    suggestionsBox.innerHTML="";
+    searchBox.value="";
+}
+
+loadSubscriptions();
+</script>
+
 
 </body>
 </html>
