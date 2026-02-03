@@ -1,6 +1,6 @@
-package com.hsbc.repo;
+package com.pm.repo;
 
-import com.hsbc.entity.StockPrice;
+import com.pm.entity.StockPrice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

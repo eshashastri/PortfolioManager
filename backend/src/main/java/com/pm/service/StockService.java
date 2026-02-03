@@ -1,7 +1,7 @@
-package com.hsbc.service;
+package com.pm.service;
 
-import com.hsbc.entity.Stock;
-import com.hsbc.repo.StockRepo;
+import com.pm.entity.Stock;
+import com.pm.repo.StockRepo;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

@@ -1,6 +1,6 @@
-package com.hsbc.controller;
+package com.pm.controller;
 
-import com.hsbc.service.StockCsvLoaderService;
+import com.pm.service.StockCsvLoaderService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController

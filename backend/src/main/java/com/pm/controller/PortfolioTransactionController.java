@@ -1,8 +1,8 @@
-package com.hsbc.controller;
+package com.pm.controller;
 
-import com.hsbc.dto.BuyRequest;
-import com.hsbc.entity.PortfolioTransaction;
-import com.hsbc.service.PortfolioTransactionService;
+import com.pm.dto.BuyRequest;
+import com.pm.entity.PortfolioTransaction;
+import com.pm.service.PortfolioTransactionService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController

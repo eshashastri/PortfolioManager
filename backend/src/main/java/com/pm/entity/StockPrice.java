@@ -1,5 +1,6 @@
-package com.hsbc.entity;
+package com.pm.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
@@ -14,6 +15,7 @@ public class StockPrice {
     // Many prices belong to one stock
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "stock_id")
+    @JsonIgnore
     private Stock stock;
 
     private LocalDate priceDate;

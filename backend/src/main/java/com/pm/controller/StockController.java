@@ -1,7 +1,7 @@
-package com.hsbc.controller;
+package com.pm.controller;
 
-import com.hsbc.entity.Stock;
-import com.hsbc.service.StockService;
+import com.pm.entity.Stock;
+import com.pm.service.StockService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

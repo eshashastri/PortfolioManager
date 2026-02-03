@@ -1,4 +1,4 @@
-package com.hsbc.dto;
+package com.pm.dto;
 
 public class FlaskPriceDTO {
 

@@ -1,7 +1,7 @@
-package com.hsbc.repo;
+package com.pm.repo;
 
-import com.hsbc.entity.PortfolioStock;
-import com.hsbc.entity.Stock;
+import com.pm.entity.PortfolioStock;
+import com.pm.entity.Stock;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

@@ -1,4 +1,4 @@
-package com.hsbc.service;
+package com.pm.dto;
 
 public class StockDTO {
 

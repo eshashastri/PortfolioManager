@@ -1,10 +1,10 @@
-package com.hsbc.service;
+package com.pm.service;
 
-import com.hsbc.dto.BuyRequest;
-import com.hsbc.entity.*;
-import com.hsbc.repo.PortfolioStockRepo;
-import com.hsbc.repo.PortfolioTransactionRepo;
-import com.hsbc.repo.StockRepo;
+import com.pm.dto.BuyRequest;
+import com.pm.entity.*;
+import com.pm.repo.PortfolioStockRepo;
+import com.pm.repo.PortfolioTransactionRepo;
+import com.pm.repo.StockRepo;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

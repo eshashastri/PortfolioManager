@@ -1,4 +1,4 @@
-package com.hsbc.entity;
+package com.pm.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;

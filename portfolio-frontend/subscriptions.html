@@ -2,73 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Subscriptions</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subscriptions | Portfolio Manager</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-
-    <style>
-        /* small custom styles only */
-
-        .search-box {
-            position: relative;
-            width: 400px;
-        }
-
-        #search {
-            width: 100%;
-            padding: 12px;
-            font-size: 16px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-        }
-
-        .suggestions {
-            position: absolute;
-            width: 100%;
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 100;
-        }
-
-        .suggestion-item {
-            padding: 10px;
-            cursor: pointer;
-        }
-
-        .suggestion-item:hover {
-            background: #f0f0f0;
-        }
-
-        .sub-item {
-            background: white;
-            padding: 12px;
-            margin: 10px 0;
-            border-radius: 8px;
-            display: flex;
-            justify-content: space-between;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-        }
-
-        .sub-item button {
-            background: #ef4444;
-            color: white;
-            border: none;
-            padding: 6px 10px;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-    </style>
 </head>
 
 <body>
 
 <div class="container">
-
-    <!-- SIDEBAR (same as index.html) -->
     <aside class="sidebar">
         <h2>Portfolio Manager</h2>
         <ul>
@@ -81,153 +24,35 @@
         </ul>
     </aside>
 
-    <!-- MAIN -->
     <main class="main">
-
         <h1>Stock Subscriptions</h1>
-
+        <p class="subtitle">Manage your watchlist. Click a card to view the trading chart.</p>
         <br>
 
         <div class="search-box">
-            <input type="text" id="search" placeholder="Search stocks...">
+            <input type="text" id="search" placeholder="Type company name or ticker...">
             <div id="suggestions" class="suggestions"></div>
         </div>
 
         <br><br>
 
-        <h2>Your Subscriptions</h2>
+        <h2>Watchlist</h2>
         <div id="subs"></div>
-
     </main>
 </div>
 
-<script>
-    const searchBox = document.getElementById("search");
-    const suggestionsBox = document.getElementById("suggestions");
-    const subsDiv = document.getElementById("subs");
-
-    let subscriptions = [];
-
-    /* SEARCH */
-    searchBox.addEventListener("input", async () => {
-
-        const q = searchBox.value;
-
-        if (q.length < 1){
-            suggestionsBox.innerHTML="";
-            return;
-        }
-
-        const res = await fetch(
-            `http://localhost:8080/stocks/search?q=${q}`
-        );
-
-        const data = await res.json();
-
-        suggestionsBox.innerHTML="";
-
-        data.forEach(stock=>{
-            const div=document.createElement("div");
-            div.className="suggestion-item";
-            div.innerText=`${stock.companyName} (${stock.ticker})`;
-            div.onclick=()=>addSubscription(stock);
-            suggestionsBox.appendChild(div);
-        });
-    });
-
-    /* ADD */
-    function addSubscription(stock){
-        if(subscriptions.find(s=>s.ticker===stock.ticker)){
-            alert("Already added!");
-            return;
-        }
-
-        subscriptions.push(stock);
-        renderSubs();
-
-        suggestionsBox.innerHTML="";
-        searchBox.value="";
-    }
-
-    /* RENDER */
-    function renderSubs(){
-        subsDiv.innerHTML="";
-
-        subscriptions.forEach(s=>{
-            const div=document.createElement("div");
-            div.className="sub-item";
-
-            div.innerHTML=`
-                <div>
-                    <b>${s.companyName}</b><br>
-                    ${s.ticker}
-                </div>
-                <button onclick="removeSub('${s.ticker}')">Delete</button>
-            `;
-
-            subsDiv.appendChild(div);
-        });
-    }
-
-    /* DELETE */
-    function removeSub(ticker){
-        subscriptions=subscriptions.filter(s=>s.ticker!==ticker);
-        renderSubs();
-    }
-</script>
-<div class="container">
-
-    <!-- Sidebar will load here -->
-    <div id="sidebar-container"></div>
-
-    <main class="main">
-        <!-- page content -->
-    </main>
-
+<div id="stockModal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal()">&times;</span>
+        <h2 id="modalTitle">Stock Performance</h2>
+        <div class="chart-container">
+            <canvas id="stockChart"></canvas>
+        </div>
+    </div>
 </div>
 
-<script src="sidebar.js"></script>
-<script>
-async function loadSubscriptions() {
-    const res = await fetch("http://localhost:8080/subscriptions");
-    subscriptions = await res.json();
-    renderSubs();
-}
-async function removeSub(ticker) {
-
-    // 1️⃣ Call backend DELETE
-    await fetch(`http://localhost:8080/subscriptions/${ticker}`, {
-        method: "DELETE"
-    });
-
-    // 2️⃣ Update UI state
-    subscriptions = subscriptions.filter(s => s.ticker !== ticker);
-    renderSubs();
-}
-async function addSubscription(stock) {
-
-    const res = await fetch("http://localhost:8080/subscriptions", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            ticker: stock.ticker,
-            companyName: stock.companyName
-        })
-    });
-
-    const saved = await res.json();
-    subscriptions.push(saved);
-
-    renderSubs();
-    suggestionsBox.innerHTML="";
-    searchBox.value="";
-}
-
-loadSubscriptions();
-</script>
-
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="api.js"></script>
+<script src="script.js"></script>
 </body>
 </html>

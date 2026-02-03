@@ -1,55 +1,38 @@
-/************************************************
- MULTI STOCK FETCH SERVICE
-************************************************/
+// api.js
+const API_BASE = "http://localhost:8080";
 
-export async function getStocks(tickers){
-
-try{
-
-const response = await fetch(
-`http://127.0.0.1:5000/stocks?tickers=${tickers.join(",")}`
-);
-
-if(!response.ok){
-throw new Error("API FAILED");
+/* -------- STOCK SEARCH -------- */
+export async function searchStocks(query) {
+    const res = await fetch(`${API_BASE}/stocks/search?q=${query}`);
+    return res.json();
 }
 
-const raw = await response.json();
-
-const formatted = [];
-
-for(const ticker of tickers){
-
-// VERY IMPORTANT GUARD
-if(!raw[ticker]){
-console.warn("No data for",ticker);
-continue;
+/* -------- SUBSCRIPTIONS -------- */
+export async function getSubscriptions() {
+    const res = await fetch(`${API_BASE}/subscriptions`);
+    return res.json();
 }
 
-formatted.push({
-
-ticker,
-
-history: raw[ticker].map(d=>({
-date:d.date,
-close:d.close,
-open:d.open,
-high:d.high,
-low:d.low,
-volume:d.volume
-}))
-
-});
-
+export async function addSubscription(stock) {
+    const res = await fetch(`${API_BASE}/subscriptions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            ticker: stock.ticker,
+            companyName: stock.companyName
+        })
+    });
+    return res.json();
 }
 
-return formatted;
-
-}catch(err){
-
-console.error("Stock API error:",err);
-return [];
-
+export async function deleteSubscription(ticker) {
+    await fetch(`${API_BASE}/subscriptions/${ticker}`, {
+        method: "DELETE"
+    });
 }
 
+/* -------- STOCK PRICES -------- */
+export async function getStockPrices(ticker) {
+    const res = await fetch(`${API_BASE}/prices/${ticker}/all`);
+    return res.json();
 }

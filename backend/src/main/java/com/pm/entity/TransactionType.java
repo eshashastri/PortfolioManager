@@ -1,4 +1,4 @@
-package com.hsbc.entity;
+package com.pm.entity;
 
 public enum TransactionType {
     BUY,

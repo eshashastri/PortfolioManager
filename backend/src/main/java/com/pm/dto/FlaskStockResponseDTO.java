@@ -1,4 +1,4 @@
-package com.hsbc.dto;
+package com.pm.dto;
 
 import java.util.List;
 

@@ -1,6 +1,6 @@
-package com.hsbc.controller;
+package com.pm.controller;
 
-import com.hsbc.service.FlaskIngestionService;
+import com.pm.service.FlaskIngestionService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController

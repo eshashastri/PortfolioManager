@@ -1,9 +1,10 @@
-package com.hsbc.service;
+package com.pm.service;
 
-import com.hsbc.dto.FlaskPriceDTO;
-import com.hsbc.dto.FlaskStockResponseDTO;
-import com.hsbc.entity.Stock;
-import com.hsbc.entity.StockPrice;
+import com.pm.dto.FlaskPriceDTO;
+import com.pm.dto.FlaskStockResponseDTO;
+import com.pm.entity.Stock;
+import com.pm.entity.StockPrice;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -25,7 +26,7 @@ public class FlaskIngestionService {
         this.stockService = stockService;
         this.stockPriceService = stockPriceService;
     }
-
+    @Async
     public void ingestStock(String ticker, String period) {
 
         String url = "http://localhost:5000/stock/" + ticker + "?period=" + period;

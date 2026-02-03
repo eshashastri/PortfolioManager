@@ -87,3 +87,287 @@ async function showStock(ticker){
 }
 
 loadSubs();
+const searchBox = document.getElementById("search");
+const suggestionsBox = document.getElementById("suggestions");
+const subsDiv = document.getElementById("subs");
+
+let subscriptions = [];
+let myChart = null;
+
+/* --- API LOGIC: SEARCH --- */
+searchBox.addEventListener("input", async () => {
+    const q = searchBox.value;
+    if (q.length < 1) {
+        suggestionsBox.innerHTML = "";
+        return;
+    }
+    try {
+        const res = await fetch(`http://localhost:8080/stocks/search?q=${q}`);
+        const data = await res.json();
+        suggestionsBox.innerHTML = "";
+        data.forEach(stock => {
+            const div = document.createElement("div");
+            div.className = "suggestion-item";
+            div.innerText = `${stock.companyName} (${stock.ticker})`;
+            div.onclick = () => addSubscription(stock);
+            suggestionsBox.appendChild(div);
+        });
+    } catch (err) {
+        console.error("Search failed", err);
+    }
+});
+
+/* --- API LOGIC: ADD --- */
+async function addSubscription(stock) {
+    try {
+        const res = await fetch("http://localhost:8080/subscriptions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ticker: stock.ticker, companyName: stock.companyName })
+        });
+        const saved = await res.json();
+        subscriptions.push(saved);
+        renderSubs();
+        suggestionsBox.innerHTML = "";
+        searchBox.value = "";
+    } catch (err) {
+        alert("Error adding stock");
+    }
+}
+
+/* --- UI LOGIC: RENDER --- */
+function renderSubs() {
+    subsDiv.innerHTML = "";
+    subscriptions.forEach(s => {
+        const div = document.createElement("div");
+        div.className = "sub-item";
+        div.onclick = () => showChart(s.ticker, s.companyName);
+        div.innerHTML = `
+            <div>
+                <b>${s.companyName}</b><br>
+                <span>${s.ticker}</span>
+            </div>
+            <button onclick="event.stopPropagation(); removeSub('${s.ticker}')">Remove</button>
+        `;
+        subsDiv.appendChild(div);
+    });
+}
+
+/* --- API LOGIC: DELETE --- */
+async function removeSub(ticker) {
+    try {
+        await fetch(`http://localhost:8080/subscriptions/${ticker}`, { method: "DELETE" });
+        subscriptions = subscriptions.filter(s => s.ticker !== ticker);
+        renderSubs();
+    } catch (err) {
+        console.error("Delete failed", err);
+    }
+}
+
+/* --- TRADING CHART LOGIC --- */
+async function showChart(ticker, companyName) {
+    document.getElementById("stockModal").style.display = "flex";
+    document.getElementById("modalTitle").innerText = `${companyName} (${ticker})`;
+
+    try {
+        const res = await fetch(`http://localhost:8080/prices/${ticker}/all`);
+        const data = await res.json();
+
+        if (!data || data.length === 0) {
+            alert("No database records found for " + ticker);
+            return;
+        }
+
+        // Sort data chronologically
+        data.sort((a, b) => new Date(a.priceDate) - new Date(b.priceDate));
+
+        const labels = data.map(p => p.priceDate);
+        const prices = data.map(p => p.closePrice || p.price || 0);
+
+        if (myChart) {
+            myChart.destroy();
+        }
+
+        const ctx = document.getElementById('stockChart').getContext('2d');
+
+        // TradingView Style Gradient
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(59, 130, 246, 0.4)');
+        gradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
+
+        myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Price',
+                    data: prices,
+                    borderColor: '#2563eb',
+                    borderWidth: 2,
+                    fill: true,
+                    backgroundColor: gradient,
+                    tension: 0.15,
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
+                    pointHoverBackgroundColor: '#2563eb',
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1e293b',
+                        padding: 12,
+                        titleFont: { size: 14, weight: '600' },
+                        callbacks: { label: (ctx) => ` $${ctx.raw.toFixed(2)}` }
+                    }
+                },
+                scales: {
+                    x: { 
+                        grid: { display: false }, 
+                        ticks: { color: '#94a3b8' } 
+                    },
+                    y: { 
+                        position: 'right', 
+                        grid: { color: '#f1f5f9' },
+                        ticks: { 
+                            color: '#94a3b8',
+                            callback: (val) => '$' + val 
+                        }
+                    }
+                }
+            }
+        });
+    } catch (err) {
+        console.error("Chart load failed", err);
+    }
+}
+
+/* --- MODAL CONTROL --- */
+function closeModal() {
+    document.getElementById("stockModal").style.display = "none";
+}
+
+/* --- INITIAL LOAD --- */
+async function loadSubscriptions() {
+    try {
+        const res = await fetch("http://localhost:8080/subscriptions");
+        subscriptions = await res.json();
+        renderSubs();
+    } catch (err) {
+        console.error("Initial load failed", err);
+    }
+}
+
+loadSubscriptions();
+/* --- STATE --- */
+let holdings = [
+    {ticker: "AAPL", qty: 10, buy: 150, current: 185},
+    {ticker: "MSFT", qty: 6, buy: 220, current: 260}
+];
+
+/* --- MODAL CONTROLS --- */
+function openModal() {
+    document.getElementById("modal").style.display = "block";
+}
+
+function closeModal() {
+    document.getElementById("modal").style.display = "none";
+    // Clear inputs on close
+    document.getElementById("tickerInput").value = "";
+    document.getElementById("qtyInput").value = "";
+    document.getElementById("priceInput").value = "";
+}
+
+/* --- ADD STOCK --- */
+function addStock() {
+    const ticker = document.getElementById("tickerInput").value.toUpperCase();
+    const qty = Number(document.getElementById("qtyInput").value);
+    const buy = Number(document.getElementById("priceInput").value);
+
+    if (!ticker || !qty || !buy) {
+        alert("Please fill all fields");
+        return;
+    }
+
+    const stock = {
+        ticker,
+        qty,
+        buy,
+        current: buy // Initial current price matches buy price
+    };
+
+    holdings.push(stock);
+    renderTable();
+    closeModal();
+}
+
+/* --- DELETE STOCK --- */
+function deleteStock(index) {
+    if(confirm(`Remove ${holdings[index].ticker} from holdings?`)) {
+        holdings.splice(index, 1);
+        renderTable();
+    }
+}
+
+/* --- RENDER TABLE & SUMMARY --- */
+function renderTable() {
+    const tbody = document.querySelector("#holdingsTable tbody");
+    tbody.innerHTML = "";
+
+    let totalInvested = 0;
+    let totalCurrent = 0;
+
+    holdings.forEach((s, index) => {
+        const invested = s.qty * s.buy;
+        const value = s.qty * s.current;
+        const pl = value - invested;
+
+        totalInvested += invested;
+        totalCurrent += value;
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td><strong>${s.ticker}</strong></td>
+            <td>${s.qty}</td>
+            <td>$${s.buy.toLocaleString()}</td>
+            <td>$${s.current.toLocaleString()}</td>
+            <td>$${invested.toLocaleString()}</td>
+            <td>$${value.toLocaleString()}</td>
+            <td style="color: ${pl >= 0 ? '#10b981' : '#ef4444'}; font-weight: 600;">
+                ${pl >= 0 ? '+' : ''}$${pl.toLocaleString()}
+            </td>
+            <td>
+                <button class="delete-btn" onclick="deleteStock(${index})">Delete</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    // Update Summary Cards
+    document.getElementById("totalInvested").innerText = "$" + totalInvested.toLocaleString();
+    document.getElementById("currentValue").innerText = "$" + totalCurrent.toLocaleString();
+    
+    const totalPL = totalCurrent - totalInvested;
+    const plElement = document.getElementById("totalPL");
+    plElement.innerText = (totalPL >= 0 ? '+' : '') + "$" + totalPL.toLocaleString();
+    plElement.style.color = totalPL >= 0 ? '#10b981' : '#ef4444';
+}
+function closeModal() {
+    const stockModal = document.getElementById("stockModal");
+    const addModal = document.getElementById("modal");
+    if (stockModal) stockModal.style.display = "none";
+    if (addModal) addModal.style.display = "none";
+    
+    // Clear inputs
+    if(document.getElementById("tickerInput")) {
+        document.getElementById("tickerInput").value = "";
+        document.getElementById("qtyInput").value = "";
+        document.getElementById("priceInput").value = "";
+    }
+}
+// Initial Render
+renderTable();

@@ -1,8 +1,7 @@
-package com.hsbc.service;
+package com.pm.service;
 
-
-import com.hsbc.entity.Subscription;
-import com.hsbc.repo.SubscriptionRepo;
+import com.pm.entity.Subscription;
+import com.pm.repo.SubscriptionRepo;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,18 +10,31 @@ import java.util.List;
 public class SubscriptionService {
 
     private final SubscriptionRepo repo;
+    private final FlaskIngestionService ingestionService;
 
-    public SubscriptionService(SubscriptionRepo repo) {
+    public SubscriptionService(
+            SubscriptionRepo repo,
+            FlaskIngestionService ingestionService
+    ) {
         this.repo = repo;
+        this.ingestionService = ingestionService;
     }
 
     public Subscription save(Subscription s) {
 
-        if(repo.existsByTicker(s.getTicker())) {
-            return null; // prevent duplicates
+        // prevent duplicates
+        if (repo.existsByTicker(s.getTicker())) {
+            return null;
         }
 
-        return repo.save(s);
+        // 1️⃣ Save subscription immediately (FAST)
+        Subscription saved = repo.save(s);
+
+        // 2️⃣ Trigger async ingestion (NON-BLOCKING)
+        ingestionService.ingestStock(saved.getTicker(), "1y");
+
+        // 3️⃣ Return instantly to frontend
+        return saved;
     }
 
     public List<Subscription> getAll() {

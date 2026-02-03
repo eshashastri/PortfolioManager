@@ -1,8 +1,7 @@
-package com.hsbc.service;
+package com.pm.service;
 
-import com.hsbc.entity.Stock;
-import com.hsbc.entity.StockPrice;
-import com.hsbc.repo.StockPriceRepo;
+import com.pm.entity.StockPrice;
+import com.pm.repo.StockPriceRepo;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;

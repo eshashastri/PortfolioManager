@@ -1,9 +1,9 @@
-package com.hsbc.controller;
+package com.pm.controller;
 
-import com.hsbc.entity.Stock;
-import com.hsbc.entity.StockPrice;
-import com.hsbc.service.StockPriceService;
-import com.hsbc.service.StockService;
+import com.pm.entity.Stock;
+import com.pm.entity.StockPrice;
+import com.pm.service.StockPriceService;
+import com.pm.service.StockService;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -11,6 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/prices")
+@CrossOrigin
 public class StockPriceController {
 
     private final StockPriceService stockPriceService;
@@ -51,8 +52,17 @@ public class StockPriceController {
                 .map(stockPriceService::savePrice)
                 .toList();
     }
+    @GetMapping("/{ticker}/all")
+    public List<StockPrice> getAllPrices(@PathVariable String ticker) {
 
-    // Get prices between start & end date
+        Stock stock = stockService.getByTicker(ticker);
+        if (stock == null) {
+            throw new RuntimeException("Stock not found: " + ticker);
+        }
+
+        return stockPriceService.getPricesForStock(stock.getId());
+    }
+
     @GetMapping("/{ticker}")
     public List<StockPrice> getPricesBetweenDates(
             @PathVariable String ticker,

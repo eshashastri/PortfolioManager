@@ -1,7 +1,8 @@
-package com.hsbc.controller;
+package com.pm.controller;
 
-import com.hsbc.entity.Subscription;
-import com.hsbc.service.SubscriptionService;
+import com.pm.entity.Subscription;
+import com.pm.service.SubscriptionService;
+import jakarta.transaction.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,6 +28,7 @@ public class SubscriptionController {
         return service.getAll();
     }
 
+    @Transactional
     @DeleteMapping("/{ticker}")
     public void delete(@PathVariable String ticker) {
         service.delete(ticker);
