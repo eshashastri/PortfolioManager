@@ -10,6 +10,7 @@ public class FlaskStockResponseDTO {
     private double latestPrice;
     private double returnPercentage;
 
+
     // getters & setters
 
     public FlaskMetadataDTO getMetadata() {

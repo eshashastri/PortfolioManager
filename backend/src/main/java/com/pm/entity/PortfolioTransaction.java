@@ -2,7 +2,6 @@ package com.pm.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-
 @Entity
 public class PortfolioTransaction {
 
@@ -22,12 +21,13 @@ public class PortfolioTransaction {
     private int quantity;
 
     @Column(nullable = false)
-    private double price; // price per share
+    private double price;
 
     private LocalDateTime transactionTime = LocalDateTime.now();
 
     public PortfolioTransaction() {}
 
+    // ✅ CORRECT constructor
     public PortfolioTransaction(
             PortfolioStock portfolioStock,
             TransactionType type,

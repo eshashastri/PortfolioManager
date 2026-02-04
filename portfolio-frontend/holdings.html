@@ -66,12 +66,42 @@
 <div id="modal" class="modal">
     <div class="modal-content">
         <h2>Add Stock</h2>
-        <label>Ticker</label>
-        <input id="tickerInput" placeholder="AAPL">
+
+        <label>Company Name</label>
+
+<div class="search-wrapper">
+    <input
+        id="companyInput"
+        placeholder="Apple, Microsoft..."
+        autocomplete="off"
+    />
+    <ul id="searchResults" class="search-results"></ul>
+</div>
+
+
+        <input type="hidden" id="tickerInput">
         <label>Quantity</label>
-        <input id="qtyInput" type="number">
+        <input id="qtyInput" type="number" min="1">
+
         <label>Buy Price</label>
-        <input id="priceInput" type="number">
+        <input id="priceInput" type="number" step="0.01" min="0">
+
+        <label>Sector</label>
+        <select id="sectorInput">
+            <option value="">Select Sector</option>
+            <option value="ENERGY">Energy</option>
+            <option value="MATERIALS">Materials</option>
+            <option value="INDUSTRIALS">Industrials</option>
+            <option value="CONSUMER_DISCRETIONARY">Consumer Discretionary</option>
+            <option value="CONSUMER_STAPLES">Consumer Staples</option>
+            <option value="HEALTH_CARE">Health Care</option>
+            <option value="FINANCIALS">Financials</option>
+            <option value="INFORMATION_TECHNOLOGY">Information Technology</option>
+            <option value="COMMUNICATION_SERVICES">Communication Services</option>
+            <option value="UTILITIES">Utilities</option>
+            <option value="REAL_ESTATE">Real Estate</option>
+        </select>
+
         <div class="modal-actions">
             <button class="add-btn" onclick="addStock()">Add</button>
             <button class="cancel-btn" onclick="closeModal()">Cancel</button>
@@ -79,7 +109,38 @@
     </div>
 </div>
 
+
 <script src="api.js"></script>
 <script src="script.js"></script>
+<script>
+    const searchBox1 = document.getElementById("companyInput");
+
+searchBox1.addEventListener("input", async () => {
+    const q = searchBox1.value;
+    if (q.length < 1) {
+        searchResults.innerHTML = "";
+        return;
+    }
+    try {
+        const res = await fetch(`http://localhost:8080/stocks/search?q=${q}`);
+        const data = await res.json();
+        searchResults.innerHTML = "";
+        data.forEach(stock => {
+            const div = document.createElement("div");
+            div.className = "suggestion-item";
+            div.innerText = `${stock.companyName} (${stock.ticker})`;
+            div.onclick = () => {
+    selectStock(stock);
+    selectedStock = stock; 
+};
+
+
+            searchResults.appendChild(div);
+        });
+    } catch (err) {
+        console.error("Search failed", err);
+    }
+});
+</script>
 </body>
 </html>

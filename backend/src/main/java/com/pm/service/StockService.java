@@ -29,11 +29,7 @@ public class StockService {
     }
 
     public Stock getByTicker(String ticker){
-        return repo.findAll()
-                .stream()
-                .filter(s -> s.getTicker().equalsIgnoreCase(ticker))
-                .findFirst()
-                .orElse(null);
+        return repo.findByTicker(ticker);
     }
 }
 

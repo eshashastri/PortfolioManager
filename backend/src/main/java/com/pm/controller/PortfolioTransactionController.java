@@ -1,12 +1,16 @@
 package com.pm.controller;
 
 import com.pm.dto.BuyRequest;
+import com.pm.dto.TransactionResponseDTO;
 import com.pm.entity.PortfolioTransaction;
 import com.pm.service.PortfolioTransactionService;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/portfolio")
+@CrossOrigin
 public class PortfolioTransactionController {
 
     private final PortfolioTransactionService service;
@@ -16,7 +20,10 @@ public class PortfolioTransactionController {
     ) {
         this.service = service;
     }
-
+    @GetMapping("/transactions")
+    public List<TransactionResponseDTO> getAllTransactions() {
+        return service.getAllTransactions();
+    }
     // BUY
     @PostMapping("/buy")
     public PortfolioTransaction buy(
@@ -25,9 +32,9 @@ public class PortfolioTransactionController {
         return service.buy(buyRequest);
     }
 
-    // SELL
-    @PostMapping("/sell")
-    public PortfolioTransaction sell(@RequestBody BuyRequest buyRequest) {
-        return service.sell(buyRequest);
-    }
+//     SELL
+//    @PostMapping("/sell")
+//    public PortfolioTransaction sell(@RequestBody BuyRequest buyRequest) {
+//        return service.sell(buyRequest);
+//    }
 }

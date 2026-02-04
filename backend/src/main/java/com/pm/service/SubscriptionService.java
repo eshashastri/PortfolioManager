@@ -27,13 +27,10 @@ public class SubscriptionService {
             return null;
         }
 
-        // 1️⃣ Save subscription immediately (FAST)
         Subscription saved = repo.save(s);
 
-        // 2️⃣ Trigger async ingestion (NON-BLOCKING)
         ingestionService.ingestStock(saved.getTicker(), "1y");
 
-        // 3️⃣ Return instantly to frontend
         return saved;
     }
 
