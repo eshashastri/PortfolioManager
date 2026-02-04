@@ -1,8 +1,6 @@
-fetch("http://localhost:8080/stocks")
 const API = "http://localhost:8080";
 
-const email = "test@gmail.com"; // later make dynamic
-
+let selectedTicker = null;
 // SEARCH
 document.getElementById("search")
 .addEventListener("input", async (e) => {
@@ -116,6 +114,23 @@ searchBox.addEventListener("input", async () => {
         console.error("Search failed", err);
     }
 });
+
+
+function selectStock(stock) {
+    // Fill input with company name (UX)
+    searchBox1.value = stock.companyName;
+
+    // Store ticker internally (logic)
+    selectedTicker = stock.ticker;
+
+    // Optional: auto-fill sector if you want later
+    // document.getElementById("sectorInput").value = stock.sector;
+
+    // Clear suggestions
+    searchResults.innerHTML = "";
+}
+
+
 
 /* --- API LOGIC: ADD --- */
 async function addSubscription(stock) {
@@ -246,10 +261,7 @@ async function showChart(ticker, companyName) {
     }
 }
 
-/* --- MODAL CONTROL --- */
-function closeModal() {
-    document.getElementById("stockModal").style.display = "none";
-}
+
 
 /* --- INITIAL LOAD --- */
 async function loadSubscriptions() {
@@ -272,38 +284,71 @@ let holdings = [
 /* --- MODAL CONTROLS --- */
 function openModal() {
     document.getElementById("modal").style.display = "block";
+    modal.style.display = "flex";
 }
 
 function closeModal() {
+    
     document.getElementById("modal").style.display = "none";
     // Clear inputs on close
+    document.getElementById("companyName").value="";
     document.getElementById("tickerInput").value = "";
     document.getElementById("qtyInput").value = "";
     document.getElementById("priceInput").value = "";
 }
 
 /* --- ADD STOCK --- */
-function addStock() {
-    const ticker = document.getElementById("tickerInput").value.toUpperCase();
-    const qty = Number(document.getElementById("qtyInput").value);
-    const buy = Number(document.getElementById("priceInput").value);
+async function addStock() {
+    const quantity = parseInt(document.getElementById("qtyInput").value);
+    const price = parseFloat(document.getElementById("priceInput").value);
+    const sector = document.getElementById("sectorInput").value;
 
-    if (!ticker || !qty || !buy) {
-        alert("Please fill all fields");
+    if (!selectedStock || !quantity || !price || !sector) {
+        alert("Please select a stock and fill all fields");
         return;
     }
 
-    const stock = {
-        ticker,
-        qty,
-        buy,
-        current: buy // Initial current price matches buy price
-    };
+    // 1️⃣ BUY
+    const buyRes = await fetch("http://localhost:8080/portfolio/buy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            ticker: selectedStock.ticker,
+            quantity,
+            price,
+            sector
+        })
+    });
 
-    holdings.push(stock);
-    renderTable();
+    if (!buyRes.ok) {
+        alert("Buy failed");
+        return;
+    }
+
+    // 2️⃣ SUBSCRIBE (reuse SAME stock object)
+    const subRes = await fetch("http://localhost:8080/subscriptions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            ticker: selectedStock.ticker,
+            companyName: selectedStock.companyName
+        })
+    });
+
+    if (!subRes.ok) {
+        alert("Subscription failed");
+        return;
+    }
+
     closeModal();
+    loadHoldings();
+
+    // reset state
+    selectedTicker = null;
+    selectedStock = null;
+    document.getElementById("companyInput").value = "";
 }
+
 
 /* --- DELETE STOCK --- */
 function deleteStock(index) {
@@ -371,3 +416,41 @@ function closeModal() {
 }
 // Initial Render
 renderTable();
+
+//transactions page loading
+
+async function loadTransactions() {
+    const filter = document.getElementById("filter").value;
+
+    const transactions = await StockAPI.getTransactions();
+
+    let totalBuys = 0;
+    let totalSells = 0;
+
+    const tbody = document.querySelector("#transactionsTable tbody");
+    tbody.innerHTML = "";
+
+    transactions
+        .filter(tx => filter === "ALL" || tx.type === filter)
+        .forEach(tx => {
+            if (tx.type === "BUY") totalBuys++;
+            if (tx.type === "SELL") totalSells++;
+            const date = new Date(tx.transactionTime).toISOString().split('T')[0];
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${date}</td>
+                <td>${tx.type}</td>
+                <td>${tx.ticker}</td>
+                <td>${tx.companyName}</td>
+                <td>${tx.quantity}</td>
+                <td>$${tx.price}</td>
+                <td>$${(tx.quantity * tx.price).toFixed(2)}</td>
+            `;
+            tbody.appendChild(row);
+        });
+
+    document.getElementById("totalTrades").innerText =
+        `${transactions.length} Trades`;
+    document.getElementById("totalBuys").innerText = totalBuys;
+    document.getElementById("totalSells").innerText = totalSells;
+}

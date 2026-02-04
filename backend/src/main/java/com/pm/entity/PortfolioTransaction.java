@@ -23,24 +23,27 @@ public class PortfolioTransaction {
 
     @Column(nullable = false)
     private double price; // price per share
-
+    private Sector sector;
     private LocalDateTime transactionTime = LocalDateTime.now();
 
     public PortfolioTransaction() {}
 
-    public PortfolioTransaction(
-            PortfolioStock portfolioStock,
-            TransactionType type,
-            int quantity,
-            double price
-    ) {
+    public PortfolioTransaction(PortfolioStock portfolioStock, TransactionType type, int quantity, double price, Sector sector) {
+        this.id = id;
         this.portfolioStock = portfolioStock;
         this.type = type;
         this.quantity = quantity;
         this.price = price;
+        this.sector = sector;
     }
 
-    // getters & setters
+    public Sector getSector() {
+        return sector;
+    }
+
+    public void setSector(Sector sector) {
+        this.sector = sector;
+    }
 
     public int getId() {
         return id;

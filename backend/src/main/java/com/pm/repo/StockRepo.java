@@ -10,7 +10,6 @@ public interface StockRepo extends JpaRepository<Stock, Long> {
     // For CSV duplicate check
    Stock findByTicker(String ticker);
 
-    // 🔥 THIS FIXES YOUR ERROR
     List<Stock> findTop20ByTickerContainingIgnoreCaseOrCompanyNameContainingIgnoreCase(
             String ticker,
             String companyName
