@@ -32,7 +32,7 @@ public class PortfolioTransactionController {
         return service.buy(buyRequest);
     }
 
-    // SELL
+//     SELL
 //    @PostMapping("/sell")
 //    public PortfolioTransaction sell(@RequestBody BuyRequest buyRequest) {
 //        return service.sell(buyRequest);
