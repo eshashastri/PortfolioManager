@@ -1,3 +1,5 @@
+let sellTicker = null;
+
 const API = "http://localhost:8080";
 
 let selectedTicker = null;
@@ -453,4 +455,117 @@ async function loadTransactions() {
         `${transactions.length} Trades`;
     document.getElementById("totalBuys").innerText = totalBuys;
     document.getElementById("totalSells").innerText = totalSells;
+}
+
+
+// Holdings page
+
+async function loadHoldings() {
+    const holdings = await StockAPI.getHoldings();
+    const tbody = document.querySelector("#holdingsTable tbody");
+    tbody.innerHTML = "";
+
+    let totalInvested = 0;
+    let totalCurrent = 0;
+
+    for (const h of holdings) {
+
+        // 🔹 Fetch latest closing price
+        const priceRes = await fetch(`http://localhost:8080/prices/${h.ticker}/all`);
+        const prices = await priceRes.json();
+
+
+        // ensure latest by date
+        prices.sort((a, b) => new Date(b.priceDate) - new Date(a.priceDate));
+        const currentPrice = prices[0].closePrice ?? prices[0].price;
+
+        const invested = h.quantity * h.avgBuyPrice;
+        const marketValue = h.quantity * currentPrice;
+        const pl = marketValue - invested;
+
+        totalInvested += invested;
+        totalCurrent += marketValue;
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td><strong>${h.companyName}</strong></td>
+            <td>${h.ticker}</td>
+            <td>${h.quantity}</td>
+            <td>$${h.avgBuyPrice.toFixed(2)}</td>
+            <td>$${currentPrice.toFixed(2)}</td>
+            <td>$${invested.toFixed(2)}</td>
+       
+            <td style="color:${pl >= 0 ? '#10b981' : '#ef4444'}; font-weight:600">
+                ${pl >= 0 ? '+' : ''}$${pl.toFixed(2)}
+            </td>
+            <td>
+                <button class="delete-btn" onclick="openSell('${h.ticker}')">
+                    Sell
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    }
+
+    // 🔹 Summary cards
+    document.getElementById("totalInvested").innerText =
+        "$" + totalInvested.toFixed(2);
+
+    document.getElementById("currentValue").innerText =
+        "$" + totalCurrent.toFixed(2);
+
+    const totalPL = totalCurrent - totalInvested;
+    const plEl = document.getElementById("totalPL");
+    plEl.innerText =
+        (totalPL >= 0 ? "+" : "") + "$" + totalPL.toFixed(2);
+    plEl.style.color =
+        totalPL >= 0 ? "#10b981" : "#ef4444";
+}
+function openSell(ticker) {
+    sellTicker = ticker;
+
+    document.getElementById("sellTickerLabel").innerText =
+        `Selling: ${ticker}`;
+
+    document.getElementById("sellQtyInput").value = "";
+    document.getElementById("sellPriceInput").value = "";
+
+    document.getElementById("sellModal").style.display = "flex";
+}
+async function confirmSell() {
+    const quantity = parseInt(
+        document.getElementById("sellQtyInput").value
+    );
+    const price = parseFloat(
+        document.getElementById("sellPriceInput").value
+    );
+
+    if (!quantity || quantity <= 0) {
+        alert("Invalid quantity");
+        return;
+    }
+
+    if (!price || price <= 0) {
+        alert("Invalid price");
+        return;
+    }
+
+    await fetch("http://localhost:8080/portfolio/sell", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            ticker: sellTicker,
+            quantity: quantity,
+            price: price
+        })
+    });
+
+    closeSellModal();
+
+    if (typeof loadHoldings === "function") loadHoldings();
+    if (typeof loadTransactions === "function") loadTransactions();
+}
+function closeSellModal() {
+    document.getElementById("sellModal").style.display = "none";
+    sellTicker = null;
 }

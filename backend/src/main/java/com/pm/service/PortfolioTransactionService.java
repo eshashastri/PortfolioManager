@@ -1,6 +1,7 @@
 package com.pm.service;
 
 import com.pm.dto.BuyRequest;
+import com.pm.dto.HoldingResponseDTO;
 import com.pm.dto.TransactionResponseDTO;
 import com.pm.entity.*;
 import com.pm.repo.PortfolioStockRepo;
@@ -40,18 +41,16 @@ public class PortfolioTransactionService {
             throw new RuntimeException("Stock not found");
         }
 
-        // 2️⃣ Get or create PortfolioStock
-        PortfolioStock ps = portfolioRepo.findByStock(stock)
+        PortfolioStock ps = portfolioRepo.findByStock_Ticker(stock.getTicker())
                 .orElseGet(() -> {
                     PortfolioStock p = new PortfolioStock();
                     p.setStock(stock);
-                    p.setSector(sector);     // ✅ sector set ONCE
+                    p.setSector(sector);
                     p.setQuantity(0);
                     p.setAvgBuyPrice(0);
                     return portfolioRepo.save(p);
                 });
 
-        // 3️⃣ Average-cost calculation
         int oldQty = ps.getQuantity();
         double oldAvg = ps.getAvgBuyPrice();
 
@@ -64,7 +63,6 @@ public class PortfolioTransactionService {
 
         portfolioRepo.save(ps);
 
-        // 4️⃣ Save BUY transaction (NO sector here)
         return transactionRepo.save(
                 new PortfolioTransaction(
                         ps,
@@ -98,41 +96,37 @@ public class PortfolioTransactionService {
 
         }).toList();
     }
-//    public PortfolioTransaction sell(BuyRequest buyRequest) {
-//
-//        String ticker = buyRequest.getTicker();
-//        int sellQty = buyRequest.getQuantity();
-//        double sellPrice = buyRequest.getPrice();
-//
-//        Stock stock = stockRepo.findByTicker(ticker);
-//        if (stock == null) {
-//            throw new RuntimeException("Stock not found");
-//        }
-//
-//        PortfolioStock ps = portfolioRepo.findByStock(stock)
-//                .orElseThrow(() -> new RuntimeException("Stock not in portfolio"));
-//
-//        int ownedQty = ps.getQuantity();
-//
-//        if (sellQty > ownedQty) {
-//            throw new RuntimeException("Not enough quantity to sell");
-//        }
-//
-//        // ✅ Reduce quantity (average price DOES NOT change)
-//        ps.setQuantity(ownedQty - sellQty);
-//        portfolioRepo.save(ps);
-//
-//        // ✅ Record SELL transaction
-//        return transactionRepo.save(
-//                new PortfolioTransaction(
-//                        ps,
-//                        TransactionType.SELL,
-//                        sellQty,
-//                        sellPrice,
-//                        ps.getStock().getSector() // ✅ correct sector
-//                )
-//        );
-//    }
+    public PortfolioTransaction sell(BuyRequest buyRequest) {
+
+        String ticker = buyRequest.getTicker();
+        int sellQty = buyRequest.getQuantity();
+        double sellPrice = buyRequest.getPrice();
+
+        Stock stock = stockRepo.findByTicker(ticker);
+        if (stock == null) {
+            throw new RuntimeException("Stock not found");
+        }
+
+        PortfolioStock ps = portfolioRepo.findByStock_Ticker(stock.getTicker())
+                .orElseThrow(() -> new RuntimeException("Stock not in portfolio"));
+
+        if (sellQty > ps.getQuantity()) {
+            throw new RuntimeException("Not enough quantity to sell");
+        }
+
+        ps.setQuantity(ps.getQuantity() - sellQty);
+        portfolioRepo.save(ps);
+
+        return transactionRepo.save(
+                new PortfolioTransaction(
+                        ps,
+                        TransactionType.SELL,
+                        sellQty,
+                        sellPrice
+                )
+        );
+    }
+
 
     private int calculateOwnedQuantity(PortfolioStock ps) {
         List<PortfolioTransaction> txs =
@@ -148,4 +142,20 @@ public class PortfolioTransactionService {
         }
         return qty;
     }
+    public List<HoldingResponseDTO> getHoldings() {
+
+        return portfolioRepo.findAll().stream()
+                .filter(ps -> ps.getQuantity() > 0) // only owned stocks
+                .map(ps -> {
+                    HoldingResponseDTO dto = new HoldingResponseDTO();
+                    dto.setTicker(ps.getStock().getTicker());
+                    dto.setCompanyName(ps.getStock().getCompanyName());
+                    dto.setQuantity(ps.getQuantity());
+                    dto.setAvgBuyPrice(ps.getAvgBuyPrice());
+                    dto.setSector(ps.getSector());
+                    return dto;
+                })
+                .toList();
+    }
+
 }

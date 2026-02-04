@@ -1,204 +1,179 @@
-import {getStocks} from "./api.js";
 
-async function loadDashboard(){
+import { StockAPI } from "./script.js"; // reuse existing API logic
 
-const tickers = ["AAPL","MSFT","GOOG"];
+let pieChart, lineChart, profitChart, comparisonChart;
 
-console.log("Fetching stocks...");
+document.addEventListener("DOMContentLoaded", async () => {
+    const holdings = await StockAPI.getHoldings();
+    const transactions = await StockAPI.getTransactions();
 
-const stocks = await getStocks(tickers);
+    if (!holdings || holdings.length === 0) return;
 
-console.log("Stocks:",stocks);
+    renderSummary(holdings);
+    renderSectorAllocation(holdings);
+    renderPortfolioGrowth(holdings);
+    renderStockPL(holdings);
+    renderComparison(holdings);
+    renderHoldingsTable(holdings);
+    renderLogs(transactions);
+});
 
 
-// 🔴 VERY IMPORTANT SAFETY CHECK
-if(!stocks || stocks.length === 0){
+const API = "http://localhost:8080";
 
-document.getElementById("portfolioValue").innerText="Loading...";
-return;
+// chart instances (so we can destroy if needed)
+async function loadDashboard() {
+    const holdings = await StockAPI.getHoldings(); // already used elsewhere
+    if (!holdings || holdings.length === 0) return;
+
+    renderSummary(holdings);
+    renderSectorAllocation(holdings);
+    renderPortfolioGrowth(holdings);
+    renderStockPL(holdings);
+    renderComparison(holdings);
+    renderHoldingsTable(holdings);
 }
 
-
-/************************************************
-BUILD PORTFOLIO
-************************************************/
-
-let portfolio=[];
-
-stocks.forEach(stock=>{
-
-const prices = stock.history.map(h=>h.close);
-
-if(prices.length===0) return;
-
-const current = prices[prices.length-1];
-
-// TEMP INVESTED VALUE
-const invested = current * 0.85;
-
-portfolio.push({
-ticker:stock.ticker,
-current,
-invested,
-history:stock.history
-});
-
-});
+document.addEventListener("DOMContentLoaded", loadDashboard);
 
 
-/************************************************
-CALCULATE TOTALS
-************************************************/
+function renderSummary(holdings) {
+    let invested = 0;
+    let current = 0;
 
-let totalInvested=0;
-let totalCurrent=0;
+    holdings.forEach(h => {
+        invested += h.quantity * h.avgBuyPrice;
+        current += h.quantity * h.currentPrice;
+    });
 
-portfolio.forEach(s=>{
-totalInvested+=s.invested;
-totalCurrent+=s.current;
-});
+    const profit = current - invested;
+    const returnPct = invested > 0 ? (profit / invested) * 100 : 0;
 
-const profit = totalCurrent-totalInvested;
-
-const returnPercent =
-((profit/totalInvested)*100).toFixed(2);
-
-
-
-/************************************************
-UPDATE UI
-************************************************/
-
-document.getElementById("portfolioValue").innerText=
-"$"+totalCurrent.toFixed(2);
-
-document.getElementById("invested").innerText=
-"$"+totalInvested.toFixed(2);
-
-document.getElementById("profit").innerText=
-"$"+profit.toFixed(2);
-
-document.getElementById("returnPercent").innerText=
-returnPercent+"%";
-
-
-
-/************************************************
-DESTROY OLD CHARTS (IMPORTANT)
-Prevents ghost charts
-************************************************/
-
-Chart.helpers.each(Chart.instances, function(instance){
-instance.destroy();
-});
-
-
-
-/************************************************
-PIE — Allocation
-************************************************/
-
-new Chart(document.getElementById("pieChart"),{
-
-type:'doughnut',
-
-data:{
-labels:portfolio.map(s=>s.ticker),
-datasets:[{
-data:portfolio.map(s=>s.current),
-backgroundColor:["#4f46e5","#22c55e","#f59e0b"]
-}]
+    document.getElementById("portfolioValue").innerText = `$${current.toFixed(2)}`;
+    document.getElementById("invested").innerText = `$${invested.toFixed(2)}`;
+    document.getElementById("profit").innerText =
+        `${profit >= 0 ? "+" : ""}$${profit.toFixed(2)}`;
+    document.getElementById("returnPercent").innerText =
+        `${returnPct.toFixed(2)}%`;
+    document.getElementById("assetCount").innerText = holdings.length;
 }
 
-});
+function renderSectorAllocation(holdings) {
+    const sectorMap = {};
 
+    holdings.forEach(h => {
+        const value = h.quantity * h.currentPrice;
+        sectorMap[h.sector] = (sectorMap[h.sector] || 0) + value;
+    });
 
+    const labels = Object.keys(sectorMap);
+    const values = Object.values(sectorMap);
 
-/************************************************
-LINE — Portfolio Growth
-************************************************/
+    if (pieChart) pieChart.destroy();
 
-const dates = portfolio[0].history.map(h=>h.date);
-
-const growth = dates.map((_,i)=>{
-
-let sum=0;
-
-portfolio.forEach(s=>{
-sum+=s.history[i].close;
-});
-
-return sum;
-
-});
-
-new Chart(document.getElementById("lineChart"),{
-
-type:'line',
-
-data:{
-labels:dates,
-datasets:[{
-label:"Portfolio Growth",
-data:growth,
-borderColor:"#4f46e5",
-tension:0.4
-}]
+    pieChart = new Chart(document.getElementById("pieChart"), {
+        type: "pie",
+        data: {
+            labels,
+            datasets: [{
+                data: values,
+                backgroundColor: [
+                    "#2563eb", "#10b981", "#f59e0b",
+                    "#ef4444", "#8b5cf6", "#14b8a6"
+                ]
+            }]
+        }
+    });
 }
+function renderPortfolioGrowth(holdings) {
+    let cumulative = 0;
+    const labels = [];
+    const values = [];
 
-});
+    holdings.forEach((h, i) => {
+        cumulative += h.quantity * h.currentPrice;
+        labels.push(h.ticker);
+        values.push(cumulative);
+    });
 
+    if (lineChart) lineChart.destroy();
 
-
-/************************************************
-BAR — Profit Loss
-************************************************/
-
-new Chart(document.getElementById("profitChart"),{
-
-type:'bar',
-
-data:{
-labels:portfolio.map(s=>s.ticker),
-datasets:[{
-data:portfolio.map(s=>s.current-s.invested),
-backgroundColor:portfolio.map(
-s=>(s.current-s.invested)>=0?
-"#16a34a":"#dc2626"
-)
-}]
+    lineChart = new Chart(document.getElementById("lineChart"), {
+        type: "line",
+        data: {
+            labels,
+            datasets: [{
+                label: "Portfolio Value",
+                data: values,
+                borderColor: "#2563eb",
+                tension: 0.3,
+                fill: false
+            }]
+        }
+    });
 }
+function renderStockPL(holdings) {
+    const labels = holdings.map(h => h.ticker);
+    const values = holdings.map(
+        h => (h.currentPrice - h.avgBuyPrice) * h.quantity
+    );
 
-});
+    if (profitChart) profitChart.destroy();
 
-
-
-/************************************************
-INVESTED vs CURRENT
-************************************************/
-
-new Chart(document.getElementById("comparisonChart"),{
-
-type:'bar',
-
-data:{
-labels:portfolio.map(s=>s.ticker),
-datasets:[
-{
-label:"Invested",
-data:portfolio.map(s=>s.invested),
-backgroundColor:"#94a3b8"
-},
-{
-label:"Current",
-data:portfolio.map(s=>s.current),
-backgroundColor:"#4f46e5"
+    profitChart = new Chart(document.getElementById("profitChart"), {
+        type: "bar",
+        data: {
+            labels,
+            datasets: [{
+                label: "Profit / Loss",
+                data: values,
+                backgroundColor: values.map(v => v >= 0 ? "#10b981" : "#ef4444")
+            }]
+        }
+    });
 }
-]
+function renderComparison(holdings) {
+    let invested = 0;
+    let current = 0;
+
+    holdings.forEach(h => {
+        invested += h.quantity * h.avgBuyPrice;
+        current += h.quantity * h.currentPrice;
+    });
+
+    if (comparisonChart) comparisonChart.destroy();
+
+    comparisonChart = new Chart(
+        document.getElementById("comparisonChart"), {
+            type: "bar",
+            data: {
+                labels: ["Invested", "Current"],
+                datasets: [{
+                    data: [invested, current],
+                    backgroundColor: ["#94a3b8", "#2563eb"]
+                }]
+            }
+        }
+    );
 }
+function renderHoldingsTable(holdings) {
+    const tbody = document.querySelector("#holdingsTable tbody");
+    tbody.innerHTML = "";
 
-});
+    holdings.forEach(h => {
+        const invested = h.quantity * h.avgBuyPrice;
+        const current = h.quantity * h.currentPrice;
+        const pl = current - invested;
 
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td>${h.ticker}</td>
+            <td>$${invested.toFixed(2)}</td>
+            <td>$${current.toFixed(2)}</td>
+            <td style="color:${pl >= 0 ? '#10b981' : '#ef4444'}">
+                ${pl >= 0 ? "+" : ""}$${pl.toFixed(2)}
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
 }
-
-loadDashboard();
