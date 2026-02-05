@@ -1,12 +1,12 @@
 
-import { StockAPI } from "./script.js"; // reuse existing API logic
+
 
 let pieChart, lineChart, profitChart, comparisonChart;
 
 document.addEventListener("DOMContentLoaded", async () => {
     const holdings = await StockAPI.getHoldings();
     const transactions = await StockAPI.getTransactions();
-
+    console.log(holdings);
     if (!holdings || holdings.length === 0) return;
 
     renderSummary(holdings);
@@ -37,14 +37,16 @@ async function loadDashboard() {
 document.addEventListener("DOMContentLoaded", loadDashboard);
 
 
-function renderSummary(holdings) {
+async function renderSummary(holdings) {
     let invested = 0;
     let current = 0;
 
-    holdings.forEach(h => {
+    for (const h of holdings) {
+        const latestPrice = await getLatestPrice(h.ticker);
+
         invested += h.quantity * h.avgBuyPrice;
-        current += h.quantity * h.currentPrice;
-    });
+        current += h.quantity * latestPrice;
+    }
 
     const profit = current - invested;
     const returnPct = invested > 0 ? (profit / invested) * 100 : 0;
@@ -58,104 +60,227 @@ function renderSummary(holdings) {
     document.getElementById("assetCount").innerText = holdings.length;
 }
 
-function renderSectorAllocation(holdings) {
+let pieChartInstance = null;
+
+async function renderSectorAllocation(holdings) {
     const sectorMap = {};
 
-    holdings.forEach(h => {
-        const value = h.quantity * h.currentPrice;
+    for (const h of holdings) {
+        const latestPrice = await getLatestPrice(h.ticker);
+        const value = h.quantity * latestPrice;
+
         sectorMap[h.sector] = (sectorMap[h.sector] || 0) + value;
-    });
+    }
 
     const labels = Object.keys(sectorMap);
     const values = Object.values(sectorMap);
 
-    if (pieChart) pieChart.destroy();
+    const ctx = document.getElementById("pieChart");
 
-    pieChart = new Chart(document.getElementById("pieChart"), {
+    // ✅ SAFELY destroy old chart
+    if (pieChartInstance instanceof Chart) {
+        pieChartInstance.destroy();
+    }
+
+    // ✅ Create new chart
+    pieChartInstance = new Chart(ctx, {
         type: "pie",
         data: {
             labels,
             datasets: [{
                 data: values,
                 backgroundColor: [
-                    "#2563eb", "#10b981", "#f59e0b",
-                    "#ef4444", "#8b5cf6", "#14b8a6"
+                    "#2563eb",
+                    "#10b981",
+                    "#f59e0b",
+                    "#ef4444",
+                    "#8b5cf6",
+                    "#14b8a6"
                 ]
             }]
+        },
+        options: {
+            plugins: {
+                legend: {
+                    position: "bottom"
+                }
+            }
         }
     });
 }
-function renderPortfolioGrowth(holdings) {
-    let cumulative = 0;
-    const labels = [];
-    const values = [];
 
-    holdings.forEach((h, i) => {
-        cumulative += h.quantity * h.currentPrice;
-        labels.push(h.ticker);
-        values.push(cumulative);
-    });
 
-    if (lineChart) lineChart.destroy();
+let lineChartInstance = null;
 
-    lineChart = new Chart(document.getElementById("lineChart"), {
+async function renderPortfolioGrowth(holdings) {
+    const dateValueMap = {};
+
+    for (const h of holdings) {
+        const prices = await fetch(
+            `http://localhost:8080/prices/${h.ticker}/all`
+        ).then(r => r.json());
+
+        prices.forEach(p => {
+            const date = p.priceDate;
+            const price = p.closePrice || p.price || 0;
+
+            if (!dateValueMap[date]) {
+                dateValueMap[date] = 0;
+            }
+
+            dateValueMap[date] += h.quantity * price;
+        });
+    }
+
+    // Sort by date
+    const sortedDates = Object.keys(dateValueMap).sort(
+        (a, b) => new Date(a) - new Date(b)
+    );
+
+    const values = sortedDates.map(d => dateValueMap[d]);
+
+    const ctx = document.getElementById("lineChart");
+
+    if (lineChartInstance instanceof Chart) {
+        lineChartInstance.destroy();
+    }
+
+    lineChartInstance = new Chart(ctx, {
         type: "line",
         data: {
-            labels,
+            labels: sortedDates,
             datasets: [{
                 label: "Portfolio Value",
                 data: values,
                 borderColor: "#2563eb",
+                backgroundColor: "rgba(37,99,235,0.15)",
                 tension: 0.3,
-                fill: false
+                fill: true,
+                pointRadius: 0
             }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: {
+                    ticks: { maxTicksLimit: 8 }
+                },
+                y: {
+                    ticks: {
+                        callback: v => `$${v.toFixed(0)}`
+                    }
+                }
+            }
         }
     });
 }
-function renderStockPL(holdings) {
-    const labels = holdings.map(h => h.ticker);
-    const values = holdings.map(
-        h => (h.currentPrice - h.avgBuyPrice) * h.quantity
-    );
 
-    if (profitChart) profitChart.destroy();
+let profitChartInstance = null;
 
-    profitChart = new Chart(document.getElementById("profitChart"), {
+async function renderStockPL(holdings) {
+    const labels = [];
+    const values = [];
+    const colors = [];
+
+    for (const h of holdings) {
+        const latestPrice = await getLatestPrice(h.ticker);
+        const pl = (latestPrice - h.avgBuyPrice) * h.quantity;
+
+        labels.push(h.ticker);
+        values.push(pl);
+        colors.push(pl >= 0 ? "#10b981" : "#ef4444");
+    }
+
+    const ctx = document.getElementById("profitChart");
+
+    if (profitChartInstance instanceof Chart) {
+        profitChartInstance.destroy();
+    }
+
+    profitChartInstance = new Chart(ctx, {
         type: "bar",
         data: {
             labels,
             datasets: [{
                 label: "Profit / Loss",
                 data: values,
-                backgroundColor: values.map(v => v >= 0 ? "#10b981" : "#ef4444")
+                backgroundColor: colors
             }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx =>
+                            `$${ctx.raw.toFixed(2)}`
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    ticks: {
+                        callback: v => `$${v}`
+                    }
+                }
+            }
         }
     });
 }
-function renderComparison(holdings) {
+
+let comparisonChartInstance = null;
+
+async function renderComparison(holdings) {
     let invested = 0;
     let current = 0;
 
-    holdings.forEach(h => {
+    for (const h of holdings) {
+        const latestPrice = await getLatestPrice(h.ticker);
+
         invested += h.quantity * h.avgBuyPrice;
-        current += h.quantity * h.currentPrice;
-    });
+        current += h.quantity * latestPrice;
+    }
 
-    if (comparisonChart) comparisonChart.destroy();
+    const ctx = document.getElementById("comparisonChart");
 
-    comparisonChart = new Chart(
-        document.getElementById("comparisonChart"), {
-            type: "bar",
-            data: {
-                labels: ["Invested", "Current"],
-                datasets: [{
-                    data: [invested, current],
-                    backgroundColor: ["#94a3b8", "#2563eb"]
-                }]
+    if (comparisonChartInstance instanceof Chart) {
+        comparisonChartInstance.destroy();
+    }
+
+    comparisonChartInstance = new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: ["Invested", "Current"],
+            datasets: [{
+                data: [invested, current],
+                backgroundColor: ["#94a3b8", "#2563eb"]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => `$${ctx.raw.toFixed(2)}`
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    ticks: {
+                        callback: v => `$${v}`
+                    }
+                }
             }
         }
-    );
+    });
 }
+
 function renderHoldingsTable(holdings) {
     const tbody = document.querySelector("#holdingsTable tbody");
     tbody.innerHTML = "";
@@ -177,3 +302,29 @@ function renderHoldingsTable(holdings) {
         tbody.appendChild(row);
     });
 }
+function renderLogs(transactions) {
+    const tbody = document.querySelector("#logsTable tbody");
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+
+    transactions.forEach(tx => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${tx.transactionTime.split("T")[0]}</td>
+            <td>${tx.type}</td>
+            <td>${tx.ticker}</td>
+            <td>${tx.quantity}</td>
+            <td>$${tx.price}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+async function getLatestPrice(ticker) {
+    const prices = await fetch(`http://localhost:8080/prices/${ticker}/all`)
+        .then(r => r.json());
+
+    return prices.at(-1)?.closePrice || prices.at(-1)?.price || 0;
+}
+

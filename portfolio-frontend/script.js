@@ -303,9 +303,8 @@ function closeModal() {
 async function addStock() {
     const quantity = parseInt(document.getElementById("qtyInput").value);
     const price = parseFloat(document.getElementById("priceInput").value);
-    const sector = document.getElementById("sectorInput").value;
 
-    if (!selectedStock || !quantity || !price || !sector) {
+    if (!selectedStock || !quantity || !price) {
         alert("Please select a stock and fill all fields");
         return;
     }
@@ -317,8 +316,7 @@ async function addStock() {
         body: JSON.stringify({
             ticker: selectedStock.ticker,
             quantity,
-            price,
-            sector
+            price
         })
     });
 

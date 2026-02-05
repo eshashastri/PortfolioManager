@@ -21,6 +21,11 @@ public class PortfolioTransactionController {
     ) {
         this.service = service;
     }
+    @GetMapping("/fetch")
+    public String getAllSector(@RequestParam String ticker) {
+        return service.fetchSectorFromYahoo(ticker);
+    }
+
     @GetMapping("/transactions")
     public List<TransactionResponseDTO> getAllTransactions() {
         return service.getAllTransactions();

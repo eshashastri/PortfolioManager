@@ -70,6 +70,31 @@ def get_stock_data(ticker):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/stock/<ticker>/sector", methods=["GET"])
+def get_stock_sector(ticker):
+    try:
+        stock = yf.Ticker(ticker)
+        info = stock.info
+
+        sector = info.get("sector")
+        industry = info.get("industry")
+
+        if not sector:
+            return jsonify({
+                "ticker": ticker.upper(),
+                "sector": "UNKNOWN",
+                "industry": "UNKNOWN"
+            })
+
+        return jsonify({
+            "ticker": ticker.upper(),
+            "sector": sector,
+            "industry": industry
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == "__main__":
     app.run(port=5000, debug=True)

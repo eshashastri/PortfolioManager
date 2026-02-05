@@ -25,19 +25,18 @@ public class PortfolioStock {
     private LocalDateTime createdAt = LocalDateTime.now();
     private int quantity;
     private double avgBuyPrice;
-    @Enumerated(EnumType.STRING)
-    private Sector sector;
+    private String sector;
     public PortfolioStock() {}
 
     public int getQuantity() {
         return quantity;
     }
 
-    public Sector getSector() {
+    public String getSector() {
         return sector;
     }
 
-    public void setSector(Sector sector) {
+    public void setSector(String sector) {
         this.sector = sector;
     }
 

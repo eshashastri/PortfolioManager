@@ -8,7 +8,7 @@ public class HoldingResponseDTO {
     private String companyName;
     private int quantity;
     private double avgBuyPrice;
-    private Sector sector;
+    private String sector;
 
     public String getTicker() {
         return ticker;
@@ -42,11 +42,11 @@ public class HoldingResponseDTO {
         this.avgBuyPrice = avgBuyPrice;
     }
 
-    public Sector getSector() {
+    public String getSector() {
         return sector;
     }
 
-    public void setSector(Sector sector) {
+    public void setSector(String sector) {
         this.sector = sector;
     }
 }

@@ -8,8 +8,10 @@ import com.pm.repo.PortfolioStockRepo;
 import com.pm.repo.PortfolioTransactionRepo;
 import com.pm.repo.StockRepo;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class PortfolioTransactionService {
@@ -33,15 +35,15 @@ public class PortfolioTransactionService {
         String ticker = buyRequest.getTicker();
         int buyQty = buyRequest.getQuantity();
         double buyPrice = buyRequest.getPrice();
-        Sector sector = buyRequest.getSector();
 
-        // 1️⃣ Validate stock
         Stock stock = stockRepo.findByTicker(ticker);
         if (stock == null) {
             throw new RuntimeException("Stock not found");
         }
 
-        PortfolioStock ps = portfolioRepo.findByStock_Ticker(stock.getTicker())
+        String sector = fetchSectorFromYahoo(ticker);
+
+        PortfolioStock ps = portfolioRepo.findByStock_Ticker(ticker)
                 .orElseGet(() -> {
                     PortfolioStock p = new PortfolioStock();
                     p.setStock(stock);
@@ -51,6 +53,7 @@ public class PortfolioTransactionService {
                     return portfolioRepo.save(p);
                 });
 
+        // 🔹 Averaging logic
         int oldQty = ps.getQuantity();
         double oldAvg = ps.getAvgBuyPrice();
 
@@ -60,7 +63,6 @@ public class PortfolioTransactionService {
 
         ps.setQuantity(newQty);
         ps.setAvgBuyPrice(newAvg);
-
         portfolioRepo.save(ps);
 
         return transactionRepo.save(
@@ -72,6 +74,26 @@ public class PortfolioTransactionService {
                 )
         );
     }
+
+    public String fetchSectorFromYahoo(String ticker) {
+        try {
+            RestTemplate restTemplate = new RestTemplate();
+            String url = "http://localhost:5000/stock/" + ticker +"/sector";
+
+            Map<?, ?> response = restTemplate.getForObject(url, Map.class);
+
+            if (response == null || response.get("sector") == null) {
+                return "UNKNOWN";
+            }
+
+            return response.get("sector").toString();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "UNKNOWN";
+        }
+    }
+
 
     public List<TransactionResponseDTO> getAllTransactions() {
 
