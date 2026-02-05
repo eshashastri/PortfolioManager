@@ -91,7 +91,6 @@ def get_stock_sector(ticker):
             "sector": sector,
             "industry": industry
         })
-
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
