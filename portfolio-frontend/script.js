@@ -94,6 +94,8 @@ const subsDiv = document.getElementById("subs");
 let subscriptions = [];
 let myChart = null;
 
+
+
 /* --- API LOGIC: SEARCH --- */
 searchBox.addEventListener("input", async () => {
     const q = searchBox.value;
