@@ -32,7 +32,6 @@ public class PortfolioTransactionService {
     }
 
     public PortfolioTransaction buy(BuyRequest buyRequest) {
-
         String ticker = buyRequest.getTicker();
         int buyQty = buyRequest.getQuantity();
         double buyPrice = buyRequest.getPrice();
@@ -59,14 +58,14 @@ public class PortfolioTransactionService {
         double oldAvg = ps.getAvgBuyPrice();
 
         int newQty = oldQty + buyQty;
-        double newAvg =
-                (oldQty * oldAvg + buyQty * buyPrice) / newQty;
+        double newAvg = (oldQty * oldAvg + buyQty * buyPrice) / newQty;
 
         ps.setQuantity(newQty);
         ps.setAvgBuyPrice(newAvg);
         portfolioRepo.save(ps);
+
+        // Now use the date passed from the frontend (defaults to today if null)
         LocalDate transactionDate = buyRequest.getDate() != null ? buyRequest.getDate() : LocalDate.now();
-        System.out.println("Transaction Date: " + transactionDate);  // Debugging log
 
         return transactionRepo.save(
                 new PortfolioTransaction(
@@ -79,6 +78,7 @@ public class PortfolioTransactionService {
         );
     }
 
+    // Fetch sector information from Yahoo Finance
     public String fetchSectorFromYahoo(String ticker) {
         try {
             RestTemplate restTemplate = new RestTemplate();
@@ -98,9 +98,8 @@ public class PortfolioTransactionService {
         }
     }
 
-
+    // Get all transactions in the portfolio
     public List<TransactionResponseDTO> getAllTransactions() {
-
         return transactionRepo.findAll().stream().map(tx -> {
 
             TransactionResponseDTO dto = new TransactionResponseDTO();
@@ -110,7 +109,6 @@ public class PortfolioTransactionService {
             dto.setQuantity(tx.getQuantity());
             dto.setPrice(tx.getPrice());
             dto.setTransactionTime(tx.getTransactionTime());
-
 
             var portfolioStock = tx.getPortfolioStock();
             var stock = portfolioStock.getStock();
@@ -122,6 +120,7 @@ public class PortfolioTransactionService {
 
         }).toList();
     }
+
     public PortfolioTransaction sell(BuyRequest buyRequest) {
 
         String ticker = buyRequest.getTicker();
@@ -139,6 +138,8 @@ public class PortfolioTransactionService {
         if (sellQty > ps.getQuantity()) {
             throw new RuntimeException("Not enough quantity to sell");
         }
+
+        // Use the date from the frontend or default to today's date
         LocalDate transactionDate = buyRequest.getDate() != null ? buyRequest.getDate() : LocalDate.now();
 
         ps.setQuantity(ps.getQuantity() - sellQty);
@@ -155,10 +156,8 @@ public class PortfolioTransactionService {
         );
     }
 
-
     private int calculateOwnedQuantity(PortfolioStock ps) {
-        List<PortfolioTransaction> txs =
-                transactionRepo.findByPortfolioStock(ps);
+        List<PortfolioTransaction> txs = transactionRepo.findByPortfolioStock(ps);
 
         int qty = 0;
         for (PortfolioTransaction tx : txs) {
@@ -170,8 +169,9 @@ public class PortfolioTransactionService {
         }
         return qty;
     }
-    public List<HoldingResponseDTO> getHoldings() {
 
+    // Get all holdings in the portfolio
+    public List<HoldingResponseDTO> getHoldings() {
         return portfolioRepo.findAll().stream()
                 .filter(ps -> ps.getQuantity() > 0) // only owned stocks
                 .map(ps -> {
@@ -185,5 +185,4 @@ public class PortfolioTransactionService {
                 })
                 .toList();
     }
-
 }
