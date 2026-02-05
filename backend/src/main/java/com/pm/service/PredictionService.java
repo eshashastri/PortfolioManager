@@ -33,5 +33,5 @@ public class PredictionService {
             System.err.println("Prediction failed for " + ticker + ": " + e.getMessage());
             return null;
         }
-    }   
+    }
 }
