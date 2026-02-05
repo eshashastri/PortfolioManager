@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predictions - Portfolio Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <aside class="sidebar">
+        <h2>Portfolio Manager</h2>
+        <ul>
+            <li><a href="index.html">Dashboard</a></li>
+            <li><a href="holdings.html">Holdings</a></li>
+            <li><a href="transactions.html">Transactions</a></li>
+            <li><a href="subscriptions.html">Subscriptions</a></li>
+        </ul>
+    </aside>
+
+    <main class="main prediction-main">
+        <header class="prediction-header">
+            <div>
+                <p class="page-kicker">ML Prediction</p>
+                <h1 id="predictionTitle">Prediction Dashboard</h1>
+                <p class="subtitle" id="predictionSubtitle">
+                    View upcoming price predictions for your selected stock, with clear visuals and a 5‑day outlook.
+                </p>
+            </div>
+            <div class="prediction-summary-card">
+                <p class="label">Current Price</p>
+                <p class="value" id="currentPriceDisplay">—</p>
+                <p class="meta" id="lastPriceDate">Last close: —</p>
+                <p class="meta" id="modelAccuracy">Model accuracy: —</p>
+            </div>
+        </header>
+
+        <section class="prediction-layout">
+            <div class="prediction-table-card">
+                <h2>Next 5 Days Outlook</h2>
+                <p class="chart-caption">
+                    Each row compares the predicted price against today’s close to show whether it is higher or lower.
+                </p>
+                <div class="table-container compact-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Day</th>
+                                <th>Date</th>
+                                <th>Predicted Price</th>
+                                <th>Vs Current</th>
+                                <th>Difference</th>
+                            </tr>
+                        </thead>
+                        <tbody id="predictionTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script src="api.js"></script>
+<script src="prediction.js"></script>
+</body>
+</html>
+
