@@ -53,10 +53,17 @@ async function renderSummary(holdings) {
 
     document.getElementById("portfolioValue").innerText = `$${current.toFixed(2)}`;
     document.getElementById("invested").innerText = `$${invested.toFixed(2)}`;
-    document.getElementById("profit").innerText =
-        `${profit >= 0 ? "+" : ""}$${profit.toFixed(2)}`;
-    document.getElementById("returnPercent").innerText =
-        `${returnPct.toFixed(2)}%`;
+const profitEl = document.getElementById("profit");
+const returnEl = document.getElementById("returnPercent");
+
+// Profit
+profitEl.innerText = `${profit >= 0 ? "+" : ""}$${profit.toFixed(2)}`;
+profitEl.style.color = profit < 0 ? "#ef4444" : "#10b981";
+
+// Return %
+returnEl.innerText = `${returnPct >= 0 ? "+" : ""}${returnPct.toFixed(2)}%`;
+returnEl.style.color = returnPct < 0 ? "#ef4444" : "#10b981";
+
     document.getElementById("assetCount").innerText = holdings.length;
 }
 

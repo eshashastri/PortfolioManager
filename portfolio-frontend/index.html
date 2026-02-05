@@ -15,195 +15,78 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
-
 <body>
 
 <div class="container">
 
     <!-- ================= SIDEBAR ================= -->
-
     <aside class="sidebar">
-
         <h2>Portfolio Manager</h2>
-
         <ul>
-            <li class="active">
-                <a href="index.html">Dashboard</a>
-            </li>
-
-            <li>
-                <a href="holdings.html">Holdings</a>
-            </li>
-
-            <li>
-                <a href="transactions.html">Transactions</a>
-            </li>
-
-
-            <!-- <li>
-                <a href="settings.html">Settings</a>
-            </li> -->
-
-            <li>
-                <a href="subscriptions.html">Subscriptions</a>
-            </li>
-
+            <li class="active"><a href="index.html">Dashboard</a></li>
+            <li><a href="holdings.html">Holdings</a></li>
+            <li><a href="transactions.html">Transactions</a></li>
+            <li><a href="subscriptions.html">Subscriptions</a></li>
         </ul>
-
     </aside>
 
-
-
     <!-- ================= MAIN CONTENT ================= -->
-
     <main class="main">
 
-
-        <!-- ========= TOP BAR ========= -->
-
         <header class="topbar">
-
             <div>
-                <h1>Total Portfolio Value</h1>
+                <h1>Dashboard</h1>
+                <h2>Total Portfolio Value</h2>
                 <h2 id="portfolioValue">$0</h2>
             </div>
-
             <div>
                 <h3>Total Return</h3>
                 <h2 id="returnPercent">0%</h2>
             </div>
-
         </header>
 
-
-
-        <!-- ========= SUMMARY CARDS ========= -->
-
         <section class="cards">
-
             <div class="card">
                 <h3>Total Invested</h3>
                 <p id="invested">$0</p>
             </div>
-
             <div class="card">
                 <h3>Profit / Loss</h3>
                 <p id="profit">$0</p>
             </div>
-<!-- 
-            <div class="card">
-                <h3>Cash Balance</h3>
-                <p>$5,000</p>
-            </div> -->
-
             <div class="card">
                 <h3>Assets Count</h3>
                 <p id="assetCount">0</p>
             </div>
-
         </section>
 
-
-
-        <!-- ========= CHART SECTION ========= -->
-
         <section class="charts">
-
             <div class="chart-box">
                 <h3>Asset Allocation</h3>
                 <canvas id="pieChart"></canvas>
             </div>
-
-            <div class="chart-box">
+            <div class="chart-box chart-box--tall">
                 <h3>Portfolio Growth</h3>
                 <canvas id="lineChart"></canvas>
             </div>
-
             <div class="chart-box">
                 <h3>Individual Stock Profit / Loss</h3>
                 <canvas id="profitChart"></canvas>
             </div>
-
             <div class="chart-box">
                 <h3>Invested vs Current Value</h3>
                 <canvas id="comparisonChart"></canvas>
             </div>
-
         </section>
-
-
-
-        <!-- ========= HOLDINGS TABLE ========= -->
-
-        <!-- <section class="table-section">
-
-            <h2>Your Holdings</h2>
-
-            <table id="holdingsTable">
-
-                <thead>
-                    <tr>
-                        <th>Symbol</th>
-                        <th>Invested ($)</th>
-                        <th>Current ($)</th>
-                        <th>Profit / Loss</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                </tbody>
-
-            </table>
-
-        </section> -->
-
-
-
-<!-- 
-        <section class="logs">
-
-            <h2>Investment Logs</h2>
-
-            <table id="logsTable">
-
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Action</th>
-                        <th>Stock</th>
-                        <th>Quantity</th>
-                        <th>Price</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                </tbody>
-
-            </table>
-
-        </section> -->
 
     </main>
 
 </div>
-
-
-
 
 <script src="script.js"></script>
 <script src="api.js"></script>
-
 <script type="module" src="./charts.js"></script>
-<div class="container">
-
-    <div id="sidebar-container"></div>
-
-    <main class="main">
-    </main>
-
-</div>
-
-<script src="sidebar.js"></script>
 
 </body>
+
 </html>

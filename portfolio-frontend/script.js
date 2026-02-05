@@ -1,7 +1,9 @@
 let sellTicker = null;
 
 const API = "http://localhost:8080";
-
+// Holdings page
+let currentPage = 1;  // Starting page
+const rowsPerPage = 5;  // Number of rows per page
 let selectedTicker = null;
 // SEARCH
 document.getElementById("search")
@@ -593,24 +595,29 @@ async function loadTransactions() {
 }
 
 
-// Holdings page
+
 
 async function loadHoldings() {
     const holdings = await StockAPI.getHoldings();
     const tbody = document.querySelector("#holdingsTable tbody");
     tbody.innerHTML = "";
+    holdings.reverse();
+    // Pagination logic
+    const totalPages = Math.ceil(holdings.length / rowsPerPage);
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    const currentPageData = holdings.slice(startIndex, endIndex);
 
     let totalInvested = 0;
     let totalCurrent = 0;
 
-    for (const h of holdings) {
-
-        // 🔹 Fetch latest closing price
+    // Loop over the data of the current page
+    for (const h of currentPageData) {
+        // Fetch latest closing price
         const priceRes = await fetch(`http://localhost:8080/prices/${h.ticker}/all`);
         const prices = await priceRes.json();
 
-
-        // ensure latest by date
+        // Ensure latest by date
         prices.sort((a, b) => new Date(b.priceDate) - new Date(a.priceDate));
         const currentPrice = prices[0].closePrice ?? prices[0].price;
 
@@ -629,7 +636,6 @@ async function loadHoldings() {
             <td>$${h.avgBuyPrice.toFixed(2)}</td>
             <td>$${currentPrice.toFixed(2)}</td>
             <td>$${invested.toFixed(2)}</td>
-       
             <td style="color:${pl >= 0 ? '#10b981' : '#ef4444'}; font-weight:600">
                 ${pl >= 0 ? '+' : ''}$${pl.toFixed(2)}
             </td>
@@ -642,20 +648,43 @@ async function loadHoldings() {
         tbody.appendChild(row);
     }
 
-    // 🔹 Summary cards
-    document.getElementById("totalInvested").innerText =
-        "$" + totalInvested.toFixed(2);
-
-    document.getElementById("currentValue").innerText =
-        "$" + totalCurrent.toFixed(2);
+    // Summary cards
+    document.getElementById("totalInvested").innerText = "$" + totalInvested.toFixed(2);
+    document.getElementById("currentValue").innerText = "$" + totalCurrent.toFixed(2);
 
     const totalPL = totalCurrent - totalInvested;
     const plEl = document.getElementById("totalPL");
-    plEl.innerText =
-        (totalPL >= 0 ? "+" : "") + "$" + totalPL.toFixed(2);
-    plEl.style.color =
-        totalPL >= 0 ? "#10b981" : "#ef4444";
+    plEl.innerText = (totalPL >= 0 ? "+" : "") + "$" + totalPL.toFixed(2);
+    plEl.style.color = totalPL >= 0 ? "#10b981" : "#ef4444";
+
+    // Update pagination info
+    document.getElementById("pageNumber").innerText = `Page ${currentPage} of ${totalPages}`;
+
+    // Enable/Disable the buttons
+    document.getElementById("prevPageBtn").disabled = currentPage === 1;
+    document.getElementById("nextPageBtn").disabled = currentPage === totalPages;
 }
+
+// Function to change the page when "Prev" or "Next" is clicked
+function changePage(direction) {
+    const totalPages = Math.ceil(StockAPI.getHoldings().length / rowsPerPage);
+    
+    currentPage += direction;
+
+    // Ensure the page is within valid range
+    if (currentPage < 1) {
+        currentPage = 1;
+    } else if (currentPage > totalPages) {
+        currentPage = totalPages;
+    }
+
+    loadHoldings();  // Reload the holdings with the new page
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    loadHoldings();
+});
+
 function openSell(ticker) {
     sellTicker = ticker;
 
