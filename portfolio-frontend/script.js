@@ -164,7 +164,12 @@ function renderSubs() {
                 <b>${s.companyName}</b><br>
                 <span>${s.ticker}</span>
             </div>
-            <button onclick="event.stopPropagation(); removeSub('${s.ticker}')">Remove</button>
+            <div class="sub-item-actions">
+                <button class="ghost-btn" onclick="event.stopPropagation(); window.location.href='prediction.html?ticker=${s.ticker}&name=${encodeURIComponent(s.companyName)}'">
+                    Predict
+                </button>
+                <button onclick="event.stopPropagation(); removeSub('${s.ticker}')">Remove</button>
+            </div>
         `;
         subsDiv.appendChild(div);
     });
@@ -185,6 +190,7 @@ async function removeSub(ticker) {
 async function showChart(ticker, companyName) {
     document.getElementById("stockModal").style.display = "flex";
     document.getElementById("modalTitle").innerText = `${companyName} (${ticker})`;
+    selectedTicker = ticker;
 
     try {
         const res = await fetch(`http://localhost:8080/prices/${ticker}/all`);
@@ -198,7 +204,25 @@ async function showChart(ticker, companyName) {
         // Sort data chronologically
         data.sort((a, b) => new Date(a.priceDate) - new Date(b.priceDate));
 
-        const labels = data.map(p => p.priceDate);
+        const rawDates = data.map(p => p.priceDate);
+
+        // Build month labels but only once per month on the x-axis
+        const labels = [];
+        let lastMonthKey = null;
+        rawDates.forEach(d => {
+            const dt = new Date(d);
+            if (isNaN(dt)) {
+                labels.push("");
+                return;
+            }
+            const key = `${dt.getFullYear()}-${dt.getMonth()}`;
+            if (key === lastMonthKey) {
+                labels.push("");
+            } else {
+                labels.push(dt.toLocaleString("default", { month: "short", year: "numeric" }));
+                lastMonthKey = key;
+            }
+        });
         const prices = data.map(p => p.closePrice || p.price || 0);
 
         if (myChart) {
@@ -217,13 +241,13 @@ async function showChart(ticker, companyName) {
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Price',
+                    label: 'Monthly Close',
                     data: prices,
                     borderColor: '#2563eb',
                     borderWidth: 2,
                     fill: true,
                     backgroundColor: gradient,
-                    tension: 0.15,
+                    tension: 0.18,
                     pointRadius: 0,
                     pointHoverRadius: 6,
                     pointHoverBackgroundColor: '#2563eb',
@@ -239,7 +263,13 @@ async function showChart(ticker, companyName) {
                         backgroundColor: '#1e293b',
                         padding: 12,
                         titleFont: { size: 14, weight: '600' },
-                        callbacks: { label: (ctx) => ` $${ctx.raw.toFixed(2)}` }
+                        callbacks: { 
+                            title: (items) => {
+                                const idx = items[0].dataIndex;
+                                return rawDates[idx] || "";
+                            },
+                            label: (ctx) => ` $${ctx.raw.toFixed(2)}`
+                        }
                     }
                 },
                 scales: {
@@ -260,6 +290,93 @@ async function showChart(ticker, companyName) {
         });
     } catch (err) {
         console.error("Chart load failed", err);
+    }
+}
+
+/* --- PREDICTION CHART (ML MODEL) --- */
+async function runPrediction() {
+    if (!selectedTicker) {
+        alert("Please select a stock from your watchlist first.");
+        return;
+    }
+
+    try {
+        const result = await StockAPI.getPrediction(selectedTicker);
+
+        if (!result || !Array.isArray(result.forecast) || result.forecast.length === 0) {
+            alert("No prediction data returned from the ML model.");
+            return;
+        }
+
+        // Build simple forward-looking labels (Day 1, Day 2, ...)
+        const forecastValues = result.forecast;
+        const labels = forecastValues.map((_, idx) => `Day ${idx + 1}`);
+
+        const panel = document.getElementById("predictionPanel");
+        if (panel) {
+            panel.style.display = "block";
+        }
+
+        const accuracyEl = document.getElementById("predictionAccuracy");
+        if (accuracyEl) {
+            accuracyEl.textContent = result.accuracy ? `Model accuracy: ${result.accuracy}` : "";
+        }
+
+        const ctx = document.getElementById("predictionChart").getContext("2d");
+        if (predictionChart) {
+            predictionChart.destroy();
+        }
+
+        const grad = ctx.createLinearGradient(0, 0, 0, 300);
+        grad.addColorStop(0, "rgba(56, 189, 248, 0.4)");
+        grad.addColorStop(1, "rgba(56, 189, 248, 0)");
+
+        predictionChart = new Chart(ctx, {
+            type: "line",
+            data: {
+                labels,
+                datasets: [{
+                    label: "Predicted Price",
+                    data: forecastValues,
+                    borderColor: "#0ea5e9",
+                    backgroundColor: grad,
+                    borderWidth: 2,
+                    tension: 0.25,
+                    pointRadius: 3,
+                    pointBackgroundColor: "#0284c7"
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: "index", intersect: false },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: "#0f172a",
+                        callbacks: {
+                            label: (ctx) => ` $${ctx.raw.toFixed(2)}`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: "#64748b" }
+                    },
+                    y: {
+                        grid: { color: "#e2e8f0" },
+                        ticks: {
+                            color: "#64748b",
+                            callback: v => `$${v}`
+                        }
+                    }
+                }
+            }
+        });
+    } catch (err) {
+        console.error("Prediction failed", err);
+        alert("Prediction request failed. Please ensure the ML service is running.");
     }
 }
 
@@ -406,6 +523,20 @@ function closeModal() {
     const addModal = document.getElementById("modal");
     if (stockModal) stockModal.style.display = "none";
     if (addModal) addModal.style.display = "none";
+
+    // Hide prediction UI and destroy forecast chart
+    const predictionPanel = document.getElementById("predictionPanel");
+    if (predictionPanel) {
+        predictionPanel.style.display = "none";
+    }
+    const accuracyEl = document.getElementById("predictionAccuracy");
+    if (accuracyEl) {
+        accuracyEl.textContent = "";
+    }
+    if (predictionChart) {
+        predictionChart.destroy();
+        predictionChart = null;
+    }
     
     // Clear inputs
     if(document.getElementById("tickerInput")) {

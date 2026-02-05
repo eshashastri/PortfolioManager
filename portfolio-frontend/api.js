@@ -48,5 +48,14 @@ const StockAPI = {
     getStockPrices: async (ticker) => {
         const res = await fetch(`${API_BASE}/prices/${ticker}/all`);
         return res.json();
+    },
+
+    /* -------- PREDICTIONS (ML MODEL) -------- */
+    getPrediction: async (ticker) => {
+        const res = await fetch(`${API_BASE}/predictions/${ticker}`);
+        if (!res.ok) {
+            throw new Error("Prediction request failed");
+        }
+        return res.json();
     }
 };
