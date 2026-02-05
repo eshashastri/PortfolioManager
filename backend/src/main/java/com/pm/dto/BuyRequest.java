@@ -2,19 +2,32 @@ package com.pm.dto;
 
 import com.pm.entity.Sector;
 
+import java.time.LocalDate;
+
 public class BuyRequest {
 
     private String ticker;
     private int quantity;
     private double price;
     private String sector;
+    private LocalDate date;
+
     public BuyRequest() {}
 
-    public BuyRequest(String ticker, int quantity, double price, String sector) {
+    public BuyRequest(String ticker, int quantity, double price, String sector, LocalDate date) {
         this.ticker = ticker;
         this.quantity = quantity;
         this.price = price;
         this.sector = sector;
+        this.date = date;
+    }
+
+    public LocalDate getDate() {
+        return date;
+    }
+
+    public void setDate(LocalDate date) {
+        this.date = date;
     }
 
     public String getSector() {

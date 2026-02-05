@@ -1,7 +1,9 @@
 package com.pm.entity;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
+import org.springframework.cglib.core.Local;
+
+import java.time.LocalDate;
 @Entity
 public class PortfolioTransaction {
 
@@ -23,7 +25,7 @@ public class PortfolioTransaction {
     @Column(nullable = false)
     private double price;
 
-    private LocalDateTime transactionTime = LocalDateTime.now();
+    private LocalDate transactionTime;
 
     public PortfolioTransaction() {}
 
@@ -32,15 +34,21 @@ public class PortfolioTransaction {
             PortfolioStock portfolioStock,
             TransactionType type,
             int quantity,
-            double price
+            double price,
+            LocalDate transactionTime
+
     ) {
         this.portfolioStock = portfolioStock;
         this.type = type;
         this.quantity = quantity;
         this.price = price;
+        this.transactionTime = transactionTime;
     }
 
-    // getters & setters
+    public void setTransactionTime(LocalDate transactionTime) {
+        this.transactionTime = transactionTime;
+    }
+// getters & setters
 
     public int getId() {
         return id;
@@ -82,11 +90,8 @@ public class PortfolioTransaction {
         this.price = price;
     }
 
-    public LocalDateTime getTransactionTime() {
+    public LocalDate getTransactionTime() {
         return transactionTime;
     }
 
-    public void setTransactionTime(LocalDateTime transactionTime) {
-        this.transactionTime = transactionTime;
-    }
 }

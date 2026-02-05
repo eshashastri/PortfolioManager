@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -87,6 +88,42 @@ public class PortfolioTransactionService {
                     ex
             );
         }
+
+        String sector = fetchSectorFromYahoo(ticker);
+
+        PortfolioStock ps = portfolioRepo.findByStock_Ticker(ticker)
+                .orElseGet(() -> {
+                    PortfolioStock p = new PortfolioStock();
+                    p.setStock(stock);
+                    p.setSector(sector);
+                    p.setQuantity(0);
+                    p.setAvgBuyPrice(0);
+                    return portfolioRepo.save(p);
+                });
+
+        // 🔹 Averaging logic
+        int oldQty = ps.getQuantity();
+        double oldAvg = ps.getAvgBuyPrice();
+
+        int newQty = oldQty + buyQty;
+        double newAvg =
+                (oldQty * oldAvg + buyQty * buyPrice) / newQty;
+
+        ps.setQuantity(newQty);
+        ps.setAvgBuyPrice(newAvg);
+        portfolioRepo.save(ps);
+        LocalDate transactionDate = buyRequest.getDate() != null ? buyRequest.getDate() : LocalDate.now();
+        System.out.println("Transaction Date: " + transactionDate);  // Debugging log
+
+        return transactionRepo.save(
+                new PortfolioTransaction(
+                        ps,
+                        TransactionType.BUY,
+                        buyQty,
+                        buyPrice,
+                        transactionDate
+                )
+        );
     }
 
     public String fetchSectorFromYahoo(String ticker) {
@@ -197,6 +234,20 @@ public class PortfolioTransactionService {
                     ex
             );
         }
+        LocalDate transactionDate = buyRequest.getDate() != null ? buyRequest.getDate() : LocalDate.now();
+
+        ps.setQuantity(ps.getQuantity() - sellQty);
+        portfolioRepo.save(ps);
+
+        return transactionRepo.save(
+                new PortfolioTransaction(
+                        ps,
+                        TransactionType.SELL,
+                        sellQty,
+                        sellPrice,
+                        transactionDate
+                )
+        );
     }
 
     private int calculateOwnedQuantity(PortfolioStock ps) {

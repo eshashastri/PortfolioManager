@@ -1,6 +1,6 @@
 package com.pm.dto;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 public class TransactionResponseDTO {
 
@@ -10,7 +10,7 @@ public class TransactionResponseDTO {
     private double price;
     private String ticker;
     private String companyName;
-    private LocalDateTime transactionTime;
+    private LocalDate transactionTime;
 
     // getters & setters
 
@@ -62,11 +62,11 @@ public class TransactionResponseDTO {
         this.companyName = companyName;
     }
 
-    public LocalDateTime getTransactionTime() {
+    public LocalDate getTransactionTime() {
         return transactionTime;
     }
 
-    public void setTransactionTime(LocalDateTime transactionTime) {
+    public void setTransactionTime(LocalDate transactionTime) {
         this.transactionTime = transactionTime;
     }
 }
