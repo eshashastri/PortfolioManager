@@ -89,22 +89,9 @@
 
         <label>Buy Price</label>
         <input id="priceInput" type="number" step="0.01" min="0">
+        <label>Transaction Date</label>
+        <input id="dateInput" type="date" />
 
-        <!-- <label>Sector</label>
-        <select id="sectorInput">
-            <option value="">Select Sector</option>
-            <option value="ENERGY">Energy</option>
-            <option value="MATERIALS">Materials</option>
-            <option value="INDUSTRIALS">Industrials</option>
-            <option value="CONSUMER_DISCRETIONARY">Consumer Discretionary</option>
-            <option value="CONSUMER_STAPLES">Consumer Staples</option>
-            <option value="HEALTH_CARE">Health Care</option>
-            <option value="FINANCIALS">Financials</option>
-            <option value="INFORMATION_TECHNOLOGY">Information Technology</option>
-            <option value="COMMUNICATION_SERVICES">Communication Services</option>
-            <option value="UTILITIES">Utilities</option>
-            <option value="REAL_ESTATE">Real Estate</option>
-        </select> -->
 
         <div class="modal-actions">
             <button class="add-btn" onclick="addStock()">Add</button>
@@ -123,6 +110,9 @@
 
         <label>Selling Price</label>
         <input id="sellPriceInput" type="number" step="0.01" min="0" />
+
+        <label>Transaction Date</label>
+        <input id="sellDateInput" type="date" />
 
         <div class="modal-actions">
             <button class="add-btn" onclick="confirmSell()">Sell</button>

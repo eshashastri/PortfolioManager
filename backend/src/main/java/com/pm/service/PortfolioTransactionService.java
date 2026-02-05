@@ -10,6 +10,7 @@ import com.pm.repo.StockRepo;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -64,13 +65,16 @@ public class PortfolioTransactionService {
         ps.setQuantity(newQty);
         ps.setAvgBuyPrice(newAvg);
         portfolioRepo.save(ps);
+        LocalDate transactionDate = buyRequest.getDate() != null ? buyRequest.getDate() : LocalDate.now();
+        System.out.println("Transaction Date: " + transactionDate);  // Debugging log
 
         return transactionRepo.save(
                 new PortfolioTransaction(
                         ps,
                         TransactionType.BUY,
                         buyQty,
-                        buyPrice
+                        buyPrice,
+                        transactionDate
                 )
         );
     }
@@ -135,6 +139,7 @@ public class PortfolioTransactionService {
         if (sellQty > ps.getQuantity()) {
             throw new RuntimeException("Not enough quantity to sell");
         }
+        LocalDate transactionDate = buyRequest.getDate() != null ? buyRequest.getDate() : LocalDate.now();
 
         ps.setQuantity(ps.getQuantity() - sellQty);
         portfolioRepo.save(ps);
@@ -144,7 +149,8 @@ public class PortfolioTransactionService {
                         ps,
                         TransactionType.SELL,
                         sellQty,
-                        sellPrice
+                        sellPrice,
+                        transactionDate
                 )
         );
     }

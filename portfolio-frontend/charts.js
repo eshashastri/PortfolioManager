@@ -112,46 +112,121 @@ async function renderSectorAllocation(holdings) {
 
 let lineChartInstance = null;
 
-async function renderPortfolioGrowth(holdings) {
-    const dateValueMap = {};
+async function renderPortfolioGrowth() {
+    const dateValueMap = {};  // To track portfolio value over time
+    let cumulativeValue = 0;  // To keep track of cumulative portfolio value
 
-    for (const h of holdings) {
-        const prices = await fetch(
-            `http://localhost:8080/prices/${h.ticker}/all`
-        ).then(r => r.json());
+    // Fetch all transactions from the portfolio (from your backend)
+    const transactions = await fetch("http://localhost:8080/portfolio/transactions").then(res => res.json());
+    console.log("Transactions fetched: ", transactions);  // Debugging: Log the transactions
 
-        prices.forEach(p => {
-            const date = p.priceDate;
-            const price = p.closePrice || p.price || 0;
+    // Fetch market prices for each stock (use the prices API)
+    const priceData = {};
 
-            if (!dateValueMap[date]) {
-                dateValueMap[date] = 0;
-            }
-
-            dateValueMap[date] += h.quantity * price;
-        });
+    for (const tx of transactions) {
+        if (!priceData[tx.ticker]) {
+            priceData[tx.ticker] = await fetch(`http://localhost:8080/prices/${tx.ticker}/all`)
+                .then(r => r.json());
+        }
     }
 
-    // Sort by date
-    const sortedDates = Object.keys(dateValueMap).sort(
-        (a, b) => new Date(a) - new Date(b)
-    );
+    // Track the holdings and calculate portfolio value
+    const stockHoldings = {};  // {ticker: quantityOwned}
+    
+    transactions.forEach(tx => {
+        const priceDataForStock = priceData[tx.ticker];
 
-    const values = sortedDates.map(d => dateValueMap[d]);
+        // Get market prices for the specific stock and transaction date
+        const transactionDate = tx.transactionTime;
+        const marketPrice = priceDataForStock.find(p => p.priceDate === transactionDate)?.closePrice;
 
+        // Handle the case where marketPrice is undefined
+        if (!marketPrice) {
+            console.error(`Market price not found for ${tx.ticker} on ${transactionDate}`);
+            return;  // Skip if the price is missing for that transaction date
+        }
+
+        // Handle buy transaction
+        if (tx.type === "BUY") {
+            // Add quantity to the stock holdings
+            if (!stockHoldings[tx.ticker]) {
+                stockHoldings[tx.ticker] = 0;
+            }
+            stockHoldings[tx.ticker] += tx.quantity;
+
+            console.log(`Bought ${tx.quantity} of ${tx.ticker} at ${marketPrice} on ${transactionDate}`);
+        }
+
+        // Handle sell transaction
+        if (tx.type === "SELL") {
+            if (!stockHoldings[tx.ticker] || stockHoldings[tx.ticker] <= 0) {
+                console.error(`Trying to sell ${tx.quantity} of ${tx.ticker} but no stock owned`);
+                return; // If no stock to sell, skip this transaction
+            }
+
+            // Calculate the market value of the sold quantity
+            const soldValue = tx.quantity * marketPrice;
+            stockHoldings[tx.ticker] -= tx.quantity;  // Decrease the stock quantity
+
+            console.log(`Sold ${tx.quantity} of ${tx.ticker} at ${marketPrice} on ${transactionDate}, Value: $${soldValue}`);
+
+            // Add this sell value to the cumulative portfolio value
+            cumulativeValue += soldValue;
+        }
+
+        // Calculate portfolio value after each transaction (buy + sell)
+        let portfolioValue = cumulativeValue;
+
+        // Add the value of remaining holdings to the portfolio value
+        for (const ticker in stockHoldings) {
+            if (stockHoldings[ticker] > 0) {
+                const remainingStockQuantity = stockHoldings[ticker];
+                const remainingStockMarketPrice = priceDataForStock.find(p => p.priceDate === transactionDate)?.closePrice || 0;
+                portfolioValue += remainingStockQuantity * remainingStockMarketPrice;
+            }
+        }
+
+        // Track portfolio value for the given date
+        dateValueMap[transactionDate] = portfolioValue;
+
+        console.log(`Portfolio value on ${transactionDate}: $${portfolioValue}`);
+    });
+
+    // Calculate cumulative portfolio values for each date
+    const sortedDates = Object.keys(dateValueMap).sort((a, b) => new Date(a) - new Date(b));
+
+    let cumulativeValues = [];
+    let totalCumulativeValue = 0;
+
+    sortedDates.forEach(date => {
+        totalCumulativeValue += dateValueMap[date];  // Add value for the current date to the cumulative value
+        cumulativeValues.push(totalCumulativeValue);  // Store cumulative value at each date
+    });
+
+    console.log("Sorted dates: ", sortedDates);  // Debugging: Log sorted dates
+    console.log("Cumulative values: ", cumulativeValues);  // Debugging: Log cumulative values
+
+    // Create chart context
     const ctx = document.getElementById("lineChart");
 
-    if (lineChartInstance instanceof Chart) {
+    if (!ctx) {
+        console.error("Chart canvas element not found!");
+        return;  // Exit if the element is not found
+    }
+
+    // Destroy the previous chart if exists
+    if (lineChartInstance && lineChartInstance instanceof Chart) {
         lineChartInstance.destroy();
     }
 
+    // Create a new chart with cumulative portfolio value
     lineChartInstance = new Chart(ctx, {
         type: "line",
         data: {
             labels: sortedDates,
             datasets: [{
-                label: "Portfolio Value",
-                data: values,
+                label: "Cumulative Portfolio Value",
+                data: cumulativeValues,
                 borderColor: "#2563eb",
                 backgroundColor: "rgba(37,99,235,0.15)",
                 tension: 0.3,
@@ -177,6 +252,7 @@ async function renderPortfolioGrowth(holdings) {
         }
     });
 }
+
 
 let profitChartInstance = null;
 

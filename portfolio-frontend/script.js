@@ -422,9 +422,10 @@ function closeModal() {
 async function addStock() {
     const quantity = parseInt(document.getElementById("qtyInput").value);
     const price = parseFloat(document.getElementById("priceInput").value);
+    const date = document.getElementById('dateInput').value;  // Get the date input
 
-    if (!selectedStock || !quantity || !price) {
-        alert("Please select a stock and fill all fields");
+    if (!selectedStock || !quantity || !price || !date) {
+        alert("Please select a stock, fill all fields, and select a date");
         return;
     }
 
@@ -435,7 +436,8 @@ async function addStock() {
         body: JSON.stringify({
             ticker: selectedStock.ticker,
             quantity,
-            price
+            price,
+            date  // Pass the date along with the other fields
         })
     });
 
@@ -466,7 +468,9 @@ async function addStock() {
     selectedTicker = null;
     selectedStock = null;
     document.getElementById("companyInput").value = "";
+    document.getElementById('dateInput').value = "";  // Clear the date input
 }
+
 
 
 /* --- DELETE STOCK --- */
@@ -660,16 +664,14 @@ function openSell(ticker) {
 
     document.getElementById("sellQtyInput").value = "";
     document.getElementById("sellPriceInput").value = "";
+    document.getElementById("sellDateInput").value = ""; // Clear the date input
 
     document.getElementById("sellModal").style.display = "flex";
 }
 async function confirmSell() {
-    const quantity = parseInt(
-        document.getElementById("sellQtyInput").value
-    );
-    const price = parseFloat(
-        document.getElementById("sellPriceInput").value
-    );
+    const quantity = parseInt(document.getElementById("sellQtyInput").value);
+    const price = parseFloat(document.getElementById("sellPriceInput").value);
+    const date = document.getElementById("sellDateInput").value;  // Get the date input
 
     if (!quantity || quantity <= 0) {
         alert("Invalid quantity");
@@ -681,22 +683,32 @@ async function confirmSell() {
         return;
     }
 
+    if (!date) {  // Check if date is not selected
+        alert("Please select a date");
+        return;
+    }
+
+    // Send the sell request along with the date
     await fetch("http://localhost:8080/portfolio/sell", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             ticker: sellTicker,
             quantity: quantity,
-            price: price
+            price: price,
+            date: date  // Send the date selected by the user
         })
     });
 
     closeSellModal();
 
+    // Reload holdings and transactions if functions are defined
     if (typeof loadHoldings === "function") loadHoldings();
     if (typeof loadTransactions === "function") loadTransactions();
 }
+
 function closeSellModal() {
     document.getElementById("sellModal").style.display = "none";
     sellTicker = null;
+    document.getElementById("sellDateInput").value = "";  // Clear the date input
 }
