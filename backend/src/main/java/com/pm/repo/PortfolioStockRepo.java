@@ -10,4 +10,5 @@ public interface PortfolioStockRepo
         extends JpaRepository<PortfolioStock, Integer> {
 
     Optional<PortfolioStock> findByStock(Stock stock);
+    Optional<PortfolioStock> findByStock_Ticker(String ticker);
 }

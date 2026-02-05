@@ -1,204 +1,330 @@
-import {getStocks} from "./api.js";
-
-async function loadDashboard(){
-
-const tickers = ["AAPL","MSFT","GOOG"];
-
-console.log("Fetching stocks...");
-
-const stocks = await getStocks(tickers);
-
-console.log("Stocks:",stocks);
 
 
-// 🔴 VERY IMPORTANT SAFETY CHECK
-if(!stocks || stocks.length === 0){
 
-document.getElementById("portfolioValue").innerText="Loading...";
-return;
+let pieChart, lineChart, profitChart, comparisonChart;
+
+document.addEventListener("DOMContentLoaded", async () => {
+    const holdings = await StockAPI.getHoldings();
+    const transactions = await StockAPI.getTransactions();
+    console.log(holdings);
+    if (!holdings || holdings.length === 0) return;
+
+    renderSummary(holdings);
+    renderSectorAllocation(holdings);
+    renderPortfolioGrowth(holdings);
+    renderStockPL(holdings);
+    renderComparison(holdings);
+    renderHoldingsTable(holdings);
+    renderLogs(transactions);
+});
+
+
+const API = "http://localhost:8080";
+
+// chart instances (so we can destroy if needed)
+async function loadDashboard() {
+    const holdings = await StockAPI.getHoldings(); // already used elsewhere
+    if (!holdings || holdings.length === 0) return;
+
+    renderSummary(holdings);
+    renderSectorAllocation(holdings);
+    renderPortfolioGrowth(holdings);
+    renderStockPL(holdings);
+    renderComparison(holdings);
+    renderHoldingsTable(holdings);
+}
+
+document.addEventListener("DOMContentLoaded", loadDashboard);
+
+
+async function renderSummary(holdings) {
+    let invested = 0;
+    let current = 0;
+
+    for (const h of holdings) {
+        const latestPrice = await getLatestPrice(h.ticker);
+
+        invested += h.quantity * h.avgBuyPrice;
+        current += h.quantity * latestPrice;
+    }
+
+    const profit = current - invested;
+    const returnPct = invested > 0 ? (profit / invested) * 100 : 0;
+
+    document.getElementById("portfolioValue").innerText = `$${current.toFixed(2)}`;
+    document.getElementById("invested").innerText = `$${invested.toFixed(2)}`;
+    document.getElementById("profit").innerText =
+        `${profit >= 0 ? "+" : ""}$${profit.toFixed(2)}`;
+    document.getElementById("returnPercent").innerText =
+        `${returnPct.toFixed(2)}%`;
+    document.getElementById("assetCount").innerText = holdings.length;
+}
+
+let pieChartInstance = null;
+
+async function renderSectorAllocation(holdings) {
+    const sectorMap = {};
+
+    for (const h of holdings) {
+        const latestPrice = await getLatestPrice(h.ticker);
+        const value = h.quantity * latestPrice;
+
+        sectorMap[h.sector] = (sectorMap[h.sector] || 0) + value;
+    }
+
+    const labels = Object.keys(sectorMap);
+    const values = Object.values(sectorMap);
+
+    const ctx = document.getElementById("pieChart");
+
+    // ✅ SAFELY destroy old chart
+    if (pieChartInstance instanceof Chart) {
+        pieChartInstance.destroy();
+    }
+
+    // ✅ Create new chart
+    pieChartInstance = new Chart(ctx, {
+        type: "pie",
+        data: {
+            labels,
+            datasets: [{
+                data: values,
+                backgroundColor: [
+                    "#2563eb",
+                    "#10b981",
+                    "#f59e0b",
+                    "#ef4444",
+                    "#8b5cf6",
+                    "#14b8a6"
+                ]
+            }]
+        },
+        options: {
+            plugins: {
+                legend: {
+                    position: "bottom"
+                }
+            }
+        }
+    });
 }
 
 
-/************************************************
-BUILD PORTFOLIO
-************************************************/
+let lineChartInstance = null;
 
-let portfolio=[];
+async function renderPortfolioGrowth(holdings) {
+    const dateValueMap = {};
 
-stocks.forEach(stock=>{
+    for (const h of holdings) {
+        const prices = await fetch(
+            `http://localhost:8080/prices/${h.ticker}/all`
+        ).then(r => r.json());
 
-const prices = stock.history.map(h=>h.close);
+        prices.forEach(p => {
+            const date = p.priceDate;
+            const price = p.closePrice || p.price || 0;
 
-if(prices.length===0) return;
+            if (!dateValueMap[date]) {
+                dateValueMap[date] = 0;
+            }
 
-const current = prices[prices.length-1];
+            dateValueMap[date] += h.quantity * price;
+        });
+    }
 
-// TEMP INVESTED VALUE
-const invested = current * 0.85;
+    // Sort by date
+    const sortedDates = Object.keys(dateValueMap).sort(
+        (a, b) => new Date(a) - new Date(b)
+    );
 
-portfolio.push({
-ticker:stock.ticker,
-current,
-invested,
-history:stock.history
-});
+    const values = sortedDates.map(d => dateValueMap[d]);
 
-});
+    const ctx = document.getElementById("lineChart");
 
+    if (lineChartInstance instanceof Chart) {
+        lineChartInstance.destroy();
+    }
 
-/************************************************
-CALCULATE TOTALS
-************************************************/
-
-let totalInvested=0;
-let totalCurrent=0;
-
-portfolio.forEach(s=>{
-totalInvested+=s.invested;
-totalCurrent+=s.current;
-});
-
-const profit = totalCurrent-totalInvested;
-
-const returnPercent =
-((profit/totalInvested)*100).toFixed(2);
-
-
-
-/************************************************
-UPDATE UI
-************************************************/
-
-document.getElementById("portfolioValue").innerText=
-"$"+totalCurrent.toFixed(2);
-
-document.getElementById("invested").innerText=
-"$"+totalInvested.toFixed(2);
-
-document.getElementById("profit").innerText=
-"$"+profit.toFixed(2);
-
-document.getElementById("returnPercent").innerText=
-returnPercent+"%";
-
-
-
-/************************************************
-DESTROY OLD CHARTS (IMPORTANT)
-Prevents ghost charts
-************************************************/
-
-Chart.helpers.each(Chart.instances, function(instance){
-instance.destroy();
-});
-
-
-
-/************************************************
-PIE — Allocation
-************************************************/
-
-new Chart(document.getElementById("pieChart"),{
-
-type:'doughnut',
-
-data:{
-labels:portfolio.map(s=>s.ticker),
-datasets:[{
-data:portfolio.map(s=>s.current),
-backgroundColor:["#4f46e5","#22c55e","#f59e0b"]
-}]
+    lineChartInstance = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: sortedDates,
+            datasets: [{
+                label: "Portfolio Value",
+                data: values,
+                borderColor: "#2563eb",
+                backgroundColor: "rgba(37,99,235,0.15)",
+                tension: 0.3,
+                fill: true,
+                pointRadius: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: {
+                    ticks: { maxTicksLimit: 8 }
+                },
+                y: {
+                    ticks: {
+                        callback: v => `$${v.toFixed(0)}`
+                    }
+                }
+            }
+        }
+    });
 }
 
-});
+let profitChartInstance = null;
 
+async function renderStockPL(holdings) {
+    const labels = [];
+    const values = [];
+    const colors = [];
 
+    for (const h of holdings) {
+        const latestPrice = await getLatestPrice(h.ticker);
+        const pl = (latestPrice - h.avgBuyPrice) * h.quantity;
 
-/************************************************
-LINE — Portfolio Growth
-************************************************/
+        labels.push(h.ticker);
+        values.push(pl);
+        colors.push(pl >= 0 ? "#10b981" : "#ef4444");
+    }
 
-const dates = portfolio[0].history.map(h=>h.date);
+    const ctx = document.getElementById("profitChart");
 
-const growth = dates.map((_,i)=>{
+    if (profitChartInstance instanceof Chart) {
+        profitChartInstance.destroy();
+    }
 
-let sum=0;
-
-portfolio.forEach(s=>{
-sum+=s.history[i].close;
-});
-
-return sum;
-
-});
-
-new Chart(document.getElementById("lineChart"),{
-
-type:'line',
-
-data:{
-labels:dates,
-datasets:[{
-label:"Portfolio Growth",
-data:growth,
-borderColor:"#4f46e5",
-tension:0.4
-}]
+    profitChartInstance = new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels,
+            datasets: [{
+                label: "Profit / Loss",
+                data: values,
+                backgroundColor: colors
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx =>
+                            `$${ctx.raw.toFixed(2)}`
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    ticks: {
+                        callback: v => `$${v}`
+                    }
+                }
+            }
+        }
+    });
 }
 
-});
+let comparisonChartInstance = null;
 
+async function renderComparison(holdings) {
+    let invested = 0;
+    let current = 0;
 
+    for (const h of holdings) {
+        const latestPrice = await getLatestPrice(h.ticker);
 
-/************************************************
-BAR — Profit Loss
-************************************************/
+        invested += h.quantity * h.avgBuyPrice;
+        current += h.quantity * latestPrice;
+    }
 
-new Chart(document.getElementById("profitChart"),{
+    const ctx = document.getElementById("comparisonChart");
 
-type:'bar',
+    if (comparisonChartInstance instanceof Chart) {
+        comparisonChartInstance.destroy();
+    }
 
-data:{
-labels:portfolio.map(s=>s.ticker),
-datasets:[{
-data:portfolio.map(s=>s.current-s.invested),
-backgroundColor:portfolio.map(
-s=>(s.current-s.invested)>=0?
-"#16a34a":"#dc2626"
-)
-}]
+    comparisonChartInstance = new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: ["Invested", "Current"],
+            datasets: [{
+                data: [invested, current],
+                backgroundColor: ["#94a3b8", "#2563eb"]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => `$${ctx.raw.toFixed(2)}`
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    ticks: {
+                        callback: v => `$${v}`
+                    }
+                }
+            }
+        }
+    });
 }
 
-});
+function renderHoldingsTable(holdings) {
+    const tbody = document.querySelector("#holdingsTable tbody");
+    tbody.innerHTML = "";
 
+    holdings.forEach(h => {
+        const invested = h.quantity * h.avgBuyPrice;
+        const current = h.quantity * h.currentPrice;
+        const pl = current - invested;
 
-
-/************************************************
-INVESTED vs CURRENT
-************************************************/
-
-new Chart(document.getElementById("comparisonChart"),{
-
-type:'bar',
-
-data:{
-labels:portfolio.map(s=>s.ticker),
-datasets:[
-{
-label:"Invested",
-data:portfolio.map(s=>s.invested),
-backgroundColor:"#94a3b8"
-},
-{
-label:"Current",
-data:portfolio.map(s=>s.current),
-backgroundColor:"#4f46e5"
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td>${h.ticker}</td>
+            <td>$${invested.toFixed(2)}</td>
+            <td>$${current.toFixed(2)}</td>
+            <td style="color:${pl >= 0 ? '#10b981' : '#ef4444'}">
+                ${pl >= 0 ? "+" : ""}$${pl.toFixed(2)}
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
 }
-]
+function renderLogs(transactions) {
+    const tbody = document.querySelector("#logsTable tbody");
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+
+    transactions.forEach(tx => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${tx.transactionTime.split("T")[0]}</td>
+            <td>${tx.type}</td>
+            <td>${tx.ticker}</td>
+            <td>${tx.quantity}</td>
+            <td>$${tx.price}</td>
+        `;
+        tbody.appendChild(tr);
+    });
 }
 
-});
+async function getLatestPrice(ticker) {
+    const prices = await fetch(`http://localhost:8080/prices/${ticker}/all`)
+        .then(r => r.json());
 
+    return prices.at(-1)?.closePrice || prices.at(-1)?.price || 0;
 }
 
-loadDashboard();

@@ -1,14 +1,17 @@
 package com.pm.service;
 
 import com.pm.dto.BuyRequest;
+import com.pm.dto.HoldingResponseDTO;
 import com.pm.dto.TransactionResponseDTO;
 import com.pm.entity.*;
 import com.pm.repo.PortfolioStockRepo;
 import com.pm.repo.PortfolioTransactionRepo;
 import com.pm.repo.StockRepo;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class PortfolioTransactionService {
@@ -32,26 +35,25 @@ public class PortfolioTransactionService {
         String ticker = buyRequest.getTicker();
         int buyQty = buyRequest.getQuantity();
         double buyPrice = buyRequest.getPrice();
-        Sector sector = buyRequest.getSector();
 
-        // 1️⃣ Validate stock
         Stock stock = stockRepo.findByTicker(ticker);
         if (stock == null) {
             throw new RuntimeException("Stock not found");
         }
 
-        // 2️⃣ Get or create PortfolioStock
-        PortfolioStock ps = portfolioRepo.findByStock(stock)
+        String sector = fetchSectorFromYahoo(ticker);
+
+        PortfolioStock ps = portfolioRepo.findByStock_Ticker(ticker)
                 .orElseGet(() -> {
                     PortfolioStock p = new PortfolioStock();
                     p.setStock(stock);
-                    p.setSector(sector);     // ✅ sector set ONCE
+                    p.setSector(sector);
                     p.setQuantity(0);
                     p.setAvgBuyPrice(0);
                     return portfolioRepo.save(p);
                 });
 
-        // 3️⃣ Average-cost calculation
+        // 🔹 Averaging logic
         int oldQty = ps.getQuantity();
         double oldAvg = ps.getAvgBuyPrice();
 
@@ -61,10 +63,8 @@ public class PortfolioTransactionService {
 
         ps.setQuantity(newQty);
         ps.setAvgBuyPrice(newAvg);
-
         portfolioRepo.save(ps);
 
-        // 4️⃣ Save BUY transaction (NO sector here)
         return transactionRepo.save(
                 new PortfolioTransaction(
                         ps,
@@ -74,6 +74,26 @@ public class PortfolioTransactionService {
                 )
         );
     }
+
+    public String fetchSectorFromYahoo(String ticker) {
+        try {
+            RestTemplate restTemplate = new RestTemplate();
+            String url = "http://localhost:5000/stock/" + ticker +"/sector";
+
+            Map<?, ?> response = restTemplate.getForObject(url, Map.class);
+
+            if (response == null || response.get("sector") == null) {
+                return "UNKNOWN";
+            }
+
+            return response.get("sector").toString();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "UNKNOWN";
+        }
+    }
+
 
     public List<TransactionResponseDTO> getAllTransactions() {
 
@@ -98,41 +118,37 @@ public class PortfolioTransactionService {
 
         }).toList();
     }
-//    public PortfolioTransaction sell(BuyRequest buyRequest) {
-//
-//        String ticker = buyRequest.getTicker();
-//        int sellQty = buyRequest.getQuantity();
-//        double sellPrice = buyRequest.getPrice();
-//
-//        Stock stock = stockRepo.findByTicker(ticker);
-//        if (stock == null) {
-//            throw new RuntimeException("Stock not found");
-//        }
-//
-//        PortfolioStock ps = portfolioRepo.findByStock(stock)
-//                .orElseThrow(() -> new RuntimeException("Stock not in portfolio"));
-//
-//        int ownedQty = ps.getQuantity();
-//
-//        if (sellQty > ownedQty) {
-//            throw new RuntimeException("Not enough quantity to sell");
-//        }
-//
-//        // ✅ Reduce quantity (average price DOES NOT change)
-//        ps.setQuantity(ownedQty - sellQty);
-//        portfolioRepo.save(ps);
-//
-//        // ✅ Record SELL transaction
-//        return transactionRepo.save(
-//                new PortfolioTransaction(
-//                        ps,
-//                        TransactionType.SELL,
-//                        sellQty,
-//                        sellPrice,
-//                        ps.getStock().getSector() // ✅ correct sector
-//                )
-//        );
-//    }
+    public PortfolioTransaction sell(BuyRequest buyRequest) {
+
+        String ticker = buyRequest.getTicker();
+        int sellQty = buyRequest.getQuantity();
+        double sellPrice = buyRequest.getPrice();
+
+        Stock stock = stockRepo.findByTicker(ticker);
+        if (stock == null) {
+            throw new RuntimeException("Stock not found");
+        }
+
+        PortfolioStock ps = portfolioRepo.findByStock_Ticker(stock.getTicker())
+                .orElseThrow(() -> new RuntimeException("Stock not in portfolio"));
+
+        if (sellQty > ps.getQuantity()) {
+            throw new RuntimeException("Not enough quantity to sell");
+        }
+
+        ps.setQuantity(ps.getQuantity() - sellQty);
+        portfolioRepo.save(ps);
+
+        return transactionRepo.save(
+                new PortfolioTransaction(
+                        ps,
+                        TransactionType.SELL,
+                        sellQty,
+                        sellPrice
+                )
+        );
+    }
+
 
     private int calculateOwnedQuantity(PortfolioStock ps) {
         List<PortfolioTransaction> txs =
@@ -148,4 +164,20 @@ public class PortfolioTransactionService {
         }
         return qty;
     }
+    public List<HoldingResponseDTO> getHoldings() {
+
+        return portfolioRepo.findAll().stream()
+                .filter(ps -> ps.getQuantity() > 0) // only owned stocks
+                .map(ps -> {
+                    HoldingResponseDTO dto = new HoldingResponseDTO();
+                    dto.setTicker(ps.getStock().getTicker());
+                    dto.setCompanyName(ps.getStock().getCompanyName());
+                    dto.setQuantity(ps.getQuantity());
+                    dto.setAvgBuyPrice(ps.getAvgBuyPrice());
+                    dto.setSector(ps.getSector());
+                    return dto;
+                })
+                .toList();
+    }
+
 }

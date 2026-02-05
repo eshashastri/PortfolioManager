@@ -1,6 +1,7 @@
 package com.pm.controller;
 
 import com.pm.dto.BuyRequest;
+import com.pm.dto.HoldingResponseDTO;
 import com.pm.dto.TransactionResponseDTO;
 import com.pm.entity.PortfolioTransaction;
 import com.pm.service.PortfolioTransactionService;
@@ -20,6 +21,11 @@ public class PortfolioTransactionController {
     ) {
         this.service = service;
     }
+    @GetMapping("/fetch")
+    public String getAllSector(@RequestParam String ticker) {
+        return service.fetchSectorFromYahoo(ticker);
+    }
+
     @GetMapping("/transactions")
     public List<TransactionResponseDTO> getAllTransactions() {
         return service.getAllTransactions();
@@ -31,10 +37,14 @@ public class PortfolioTransactionController {
             ) {
         return service.buy(buyRequest);
     }
+    @GetMapping("/holdings")
+    public List<HoldingResponseDTO> getHoldings() {
+        return service.getHoldings();
+    }
 
-//     SELL
-//    @PostMapping("/sell")
-//    public PortfolioTransaction sell(@RequestBody BuyRequest buyRequest) {
-//        return service.sell(buyRequest);
-//    }
+    //     SELL
+    @PostMapping("/sell")
+    public PortfolioTransaction sell(@RequestBody BuyRequest buyRequest) {
+        return service.sell(buyRequest);
+    }
 }

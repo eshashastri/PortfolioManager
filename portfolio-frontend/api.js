@@ -32,6 +32,10 @@ const StockAPI = {
             method: "DELETE"
         });
     },
+    getHoldings: async () => {
+        const res = await fetch(`${API_BASE}/portfolio/holdings`);
+        return res.json();
+    },
 
     /* -------- TRANSACTIONS -------- */
     getTransactions: async () => {

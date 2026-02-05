@@ -7,21 +7,21 @@ public class BuyRequest {
     private String ticker;
     private int quantity;
     private double price;
-    private Sector sector;
+    private String sector;
     public BuyRequest() {}
 
-    public BuyRequest(String ticker, int quantity, double price, Sector sector) {
+    public BuyRequest(String ticker, int quantity, double price, String sector) {
         this.ticker = ticker;
         this.quantity = quantity;
         this.price = price;
         this.sector = sector;
     }
 
-    public Sector getSector() {
+    public String getSector() {
         return sector;
     }
 
-    public void setSector(Sector sector) {
+    public void setSector(String sector) {
         this.sector = sector;
     }
 

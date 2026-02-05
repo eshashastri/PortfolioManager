@@ -16,8 +16,8 @@
             <li><a href="index.html">Dashboard</a></li>
             <li class="active"><a href="holdings.html">Holdings</a></li>
             <li><a href="transactions.html">Transactions</a></li>
-            <li><a href="analytics.html">Analytics</a></li>
-            <li><a href="settings.html">Settings</a></li>
+            <!-- <li><a href="analytics.html">Analytics</a></li> -->
+            <!-- <li><a href="settings.html">Settings</a></li> -->
             <li><a href="subscriptions.html">Subscriptions</a></li>
         </ul>
     </aside>
@@ -46,19 +46,23 @@
         <div class="table-container">
             <table id="holdingsTable">
                 <thead>
-                    <tr>
-                        <th>Ticker</th>
-                        <th>Quantity</th>
-                        <th>Buy Price</th>
-                        <th>Current Price</th>
-                        <th>Invested</th>
-                        <th>Market Value</th>
-                        <th>P/L</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
+    <tr>
+        <th>Company</th>
+        <th>Ticker</th>
+        <th>Quantity</th>
+        <th>Buy Price</th>
+        <th>Market Price</th>
+        <th>Current (Invested)</th>
+        <!-- <th>Market Value</th> -->
+        <th>Returns</th>
+        <th>Action</th>
+    </tr>
+</thead>
+
+
                 <tbody></tbody>
             </table>
+            
         </div>
     </main>
 </div>
@@ -86,7 +90,7 @@
         <label>Buy Price</label>
         <input id="priceInput" type="number" step="0.01" min="0">
 
-        <label>Sector</label>
+        <!-- <label>Sector</label>
         <select id="sectorInput">
             <option value="">Select Sector</option>
             <option value="ENERGY">Energy</option>
@@ -100,11 +104,29 @@
             <option value="COMMUNICATION_SERVICES">Communication Services</option>
             <option value="UTILITIES">Utilities</option>
             <option value="REAL_ESTATE">Real Estate</option>
-        </select>
+        </select> -->
 
         <div class="modal-actions">
             <button class="add-btn" onclick="addStock()">Add</button>
             <button class="cancel-btn" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+<div id="sellModal" class="modal">
+    <div class="modal-content">
+        <h2>Sell Stock</h2>
+
+        <p id="sellTickerLabel" style="font-weight:600;"></p>
+
+        <label>Quantity</label>
+        <input id="sellQtyInput" type="number" min="1" />
+
+        <label>Selling Price</label>
+        <input id="sellPriceInput" type="number" step="0.01" min="0" />
+
+        <div class="modal-actions">
+            <button class="add-btn" onclick="confirmSell()">Sell</button>
+            <button class="cancel-btn" onclick="closeSellModal()">Cancel</button>
         </div>
     </div>
 </div>
@@ -141,6 +163,11 @@ searchBox1.addEventListener("input", async () => {
         console.error("Search failed", err);
     }
 });
+
+document.addEventListener("DOMContentLoaded", () => {
+    loadHoldings();
+});
+
 </script>
 </body>
 </html>
