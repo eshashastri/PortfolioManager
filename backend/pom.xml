@@ -61,14 +61,25 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
     <build>
         <plugins>
+            <!-- Spring Boot Plugin (already existing) -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
+
+            <!-- Add the Maven Compiler Plugin to specify the Java version -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <release>21</release> <!-- Ensure it's targeting Java 21 -->
+                </configuration>
+            </plugin>
         </plugins>
     </build>
+
 
 </project>
