@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -173,11 +174,16 @@ class PortfolioTransactionServiceTest {
         ps.setStock(stock);
 
         PortfolioTransaction tx = new PortfolioTransaction(
-                ps, TransactionType.BUY, 10, 100
+                ps,
+                TransactionType.BUY,
+                10,
+                100,
+                LocalDate.now()
         );
 
         when(transactionRepo.findAll())
                 .thenReturn(List.of(tx));
+
 
         List<TransactionResponseDTO> list =
                 service.getAllTransactions();

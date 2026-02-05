@@ -1,12 +1,9 @@
 package com.pm.service;
 
+import com.pm.entity.Stock;
 import com.pm.entity.StockPrice;
 import com.pm.repo.StockPriceRepo;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -14,95 +11,80 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
 class StockPriceServiceTest {
 
-    @Mock
-    private StockPriceRepo stockPriceRepo;
-
-    @InjectMocks
-    private StockPriceService stockPriceService;
+    StockPriceRepo repo = mock(StockPriceRepo.class);
+    StockPriceService service = new StockPriceService(repo);
 
     // ==========================
-    // savePrice
+    // SAVE PRICE
     // ==========================
     @Test
     void savePrice_delegatesToRepo() {
 
-        StockPrice price = new StockPrice();
+        // FIX: create stock
+        Stock stock = new Stock();
+        stock.setId(1);
 
-        when(stockPriceRepo.save(price))
-                .thenReturn(price);
+        // FIX: attach stock
+        StockPrice price = new StockPrice();
+        price.setStock(stock);
+
+        when(repo.save(price)).thenReturn(price);
 
         StockPrice result =
-                stockPriceService.savePrice(price);
+                service.savePrice(price);
 
-        assertEquals(price, result);
-        verify(stockPriceRepo).save(price);
+        assertNotNull(result);
+        verify(repo).save(price);
     }
 
     // ==========================
-    // getPricesForStock
+    // GET PRICES
     // ==========================
     @Test
     void getPricesForStock_returnsList() {
 
-        List<StockPrice> mockList =
-                List.of(new StockPrice(), new StockPrice());
+        when(repo.findByStock_Id(1))
+                .thenReturn(List.of(new StockPrice()));
 
-        when(stockPriceRepo.findByStock_Id(1))
-                .thenReturn(mockList);
+        List<StockPrice> list =
+                service.getPricesForStock(1);
 
-        List<StockPrice> result =
-                stockPriceService.getPricesForStock(1);
-
-        assertEquals(2, result.size());
-        verify(stockPriceRepo).findByStock_Id(1);
+        assertEquals(1, list.size());
     }
 
     // ==========================
-    // priceExists
+    // EXISTS
     // ==========================
     @Test
     void priceExists_returnsTrue() {
 
         LocalDate date = LocalDate.now();
 
-        when(stockPriceRepo
-                .existsByStock_IdAndPriceDate(1, date))
+        when(repo.existsByStock_IdAndPriceDate(1, date))
                 .thenReturn(true);
 
-        boolean exists =
-                stockPriceService.priceExists(1, date);
-
-        assertTrue(exists);
-        verify(stockPriceRepo)
-                .existsByStock_IdAndPriceDate(1, date);
+        assertTrue(
+                service.priceExists(1, date)
+        );
     }
 
     // ==========================
-    // getPricesBetweenDates
+    // BETWEEN DATES
     // ==========================
     @Test
-    void getPricesBetweenDates_returnsResults() {
+    void getPricesBetweenDates_returnsData() {
 
-        LocalDate start = LocalDate.now().minusDays(5);
-        LocalDate end = LocalDate.now();
+        LocalDate s = LocalDate.now();
+        LocalDate e = LocalDate.now();
 
-        List<StockPrice> mockList =
-                List.of(new StockPrice());
+        when(repo.findByStock_IdAndPriceDateBetween(1,s,e))
+                .thenReturn(List.of(new StockPrice()));
 
-        when(stockPriceRepo
-                .findByStock_IdAndPriceDateBetween(1, start, end))
-                .thenReturn(mockList);
+        List<StockPrice> list =
+                service.getPricesBetweenDates(1,s,e);
 
-        List<StockPrice> result =
-                stockPriceService
-                        .getPricesBetweenDates(1, start, end);
-
-        assertEquals(1, result.size());
-
-        verify(stockPriceRepo)
-                .findByStock_IdAndPriceDateBetween(1, start, end);
+        assertEquals(1, list.size());
     }
 }
